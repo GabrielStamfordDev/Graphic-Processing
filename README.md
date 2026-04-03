@@ -5,11 +5,11 @@ Repositório base para o projeto da disciplina de Processamento Gráfico.
 ## Entregas
 
 O projeto consiste de 4 entregas mais uma entrega extra, sendo elas:
-1. Raycasting com esferas e planos
-2. Raycasting com malhas de triâgulos;
-3. Raytracing não recursivo;
-4. Raytracing recursivo;
-5. Features extras individuais
+1. [Raycasting com esferas e planos](#1-raycasting-com-esferas-e-planos)
+2. [Raycasting com malhas de triâgulos;](#2-raycasting-com-malhas-de-triângulos)
+3. [Raytracing não recursivo;](#3-raytracing-não-recursivo)
+4. [Raytracing recursivo;](#4-raytracing-recursivo)
+5. [Features extras individuais](#5-features-individuais)
 
 ## 1. Raycasting com Esferas e Planos
 Para um Raycaster básico, os grupos precisarão:
