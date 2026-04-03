@@ -52,7 +52,8 @@ g++ -std=c++17 main.cpp -o raytracer && ./raytracer
 
 ## Carregando uma cena
 
-O parser de cena lê um arquivo `.json` e devolve um objeto `SceneData` com câmera, luzes e objetos já preenchidos.
+O parser de cena lê um arquivo `.json` e devolve um objeto `SceneData` com os dados de câmera, luzes e objetos. Você deve utilizá-los como parâmetros de entrada para construção dos seus objetos e para a geração da imagem referente àquela cena. 
+> **Dica:** você não precisa utilizar dados que ainda não são necessárias para a entrega atual. Por exemplo, não é necessário utilizar o objReader antes da entrega de malhas ou o índice de reflexão antes da entrega de raytracing recursivo.
 
 **Python:**
 
