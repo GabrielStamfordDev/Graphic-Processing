@@ -5,7 +5,7 @@ from geometria import intersect_sphere, intersect_plane
 
 def main():
     if len(sys.argv) < 2:
-        print("Uso: python main.py <caminho_para_cena.json> > saida.ppm", file=sys.stderr)
+        print("Use: python main.py <caminho_para_cena.json> > out.ppm", file=sys.stderr)
         sys.exit(1)
 
     scene_file = sys.argv[1]
@@ -52,7 +52,7 @@ def main():
                 # Transformamos para a escala PPM (0 a 255)
                 r = int(255.999 * hit_color.r)
                 g = int(255.999 * hit_color.g)
-                b = int(255.999 * hit_color.b)
+                b = int(255.999 * hit_color.b)  
             else:
                 # O raio não atingiu nada, pinta de Preto (Fundo)
                 r, g, b = 0, 0, 0

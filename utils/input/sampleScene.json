@@ -78,7 +78,7 @@
       "type": "plane",
       "point_on_plane": [0, 555, 0],
       "normal": [0, -1, 0],
-      "material": "parede_branca"
+      "material": "parede_vermelha"
     },
     {
       "name": "Parede do Fundo",
