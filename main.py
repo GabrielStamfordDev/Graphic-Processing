@@ -1,53 +1,67 @@
 import sys
+import numpy as np
 from utils.Scene.sceneParser import SceneJsonLoader
 from utils.MeshReader.ObjReader import ObjReader
 from camera import Camera
 from geometria import intersect_sphere, intersect_plane, intersect_triangle
-
+from transformacoes import (
+    matriz_translacao, matriz_escala, 
+    matriz_rotacao_x, matriz_rotacao_y, matriz_rotacao_z, 
+    aplicar_matriz_ponto
+)
 
 def main():
-    """
-    Programa de ray casting básico.
-
-    Recebe como argumento um arquivo de cena (.json), carrega os dados
-    utilizando o parser fornecido e configura a câmera.
-
-    Para cada pixel da imagem:
-    - Gera um raio a partir da câmera na direção correspondente ao pixel
-    - Testa interseção desse raio com todos os objetos da cena (esferas e planos)
-    - Seleciona o objeto mais próximo (menor t positivo)
-    - Atribui ao pixel a cor difusa do objeto atingido
-    - Caso não haja interseção, o pixel recebe cor preta
-
-    As cores dos objetos estão no intervalo [0,1] e são convertidas para
-    o intervalo [0,255] antes de serem escritas, conforme exigido pelo
-    formato PPM (P3).
-
-    A imagem é escrita no formato PPM diretamente na saída padrão,
-    permitindo redirecionamento para um arquivo.
-
-    Mensagens de progresso são enviadas para stderr para não interferir
-    no arquivo de saída.
-    """
     if len(sys.argv) < 2:
-        print("Use: python main.py <caminho_para_cena.json> > out.ppm", file=sys.stderr)
+        print("Use: python main.py <caminho_para_cena.json>", file=sys.stderr)
         sys.exit(1)
 
     scene_file = sys.argv[1]
     scene_data = SceneJsonLoader.load_file(scene_file)
     cam = Camera(scene_data.camera)
     
-# --- PRÉ-CARREGAMENTO DE MALHAS ---
-    # Guarda os ObjReaders na memória para não reler o arquivo a cada pixel
+    # --- PRÉ-CARREGAMENTO E TRANSFORMAÇÃO DE MALHAS ---
     loaded_meshes = {}
     for obj in scene_data.objects:
         if obj.obj_type == "mesh":
-            # Pega o caminho do arquivo (Ajuste a string "filename" se o seu JSON usar outro nome, ex: "file")
-            obj_path = obj.get_property("path") 
+            obj_path = obj.get_property("path") # Acessa a propriedade "path" de monkeyScene.txt
+            
+            # Carrega o ObjReader cru apenas uma vez por arquivo
             if obj_path not in loaded_meshes:
-                print(f"Carregando malha: {obj_path}...", file=sys.stderr)
+                print(f"Carregando arquivo 3D bruto: {obj_path}...", file=sys.stderr)
                 loaded_meshes[obj_path] = ObjReader(obj_path)
-    # ----------------------------------
+            
+            mesh_reader = loaded_meshes[obj_path]
+            
+            # 1. Constrói a Matriz 4x4 Final (Começando com a Matriz Identidade)
+            M_total = np.eye(4)
+            
+            for t in obj.transforms:
+                M_atual = np.eye(4)
+                # O parser mapeia o vetor (factors, vector, angle) sempre para t.data
+                if t.t_type == "scaling":
+                    M_atual = matriz_escala(t.data.x, t.data.y, t.data.z)
+                elif t.t_type == "translation":
+                    M_atual = matriz_translacao(t.data.x, t.data.y, t.data.z)
+                elif t.t_type == "rotation":
+                    Mx = matriz_rotacao_x(t.data.x)
+                    My = matriz_rotacao_y(t.data.y)
+                    Mz = matriz_rotacao_z(t.data.z)
+                    M_atual = Mz @ My @ Mx  # Ordem padrão de Euler (Z * Y * X)
+                
+                # Multiplicação matricial (Transformação mais recente é aplicada por último)
+                M_total = M_atual @ M_total 
+
+            # 2. Aplica a Matriz M_total em todos os triângulos e guarda neste objeto
+            triangulos_transformados = []
+            for face_pts in mesh_reader.get_face_points():
+                v0_trans = aplicar_matriz_ponto(M_total, face_pts[0])
+                v1_trans = aplicar_matriz_ponto(M_total, face_pts[1])
+                v2_trans = aplicar_matriz_ponto(M_total, face_pts[2])
+                triangulos_transformados.append((v0_trans, v1_trans, v2_trans))
+            
+            # Grudamos a lista de triângulos "prontos para renderizar" dentro da instância do objeto
+            obj.faces_transformadas = triangulos_transformados
+    # ------------------------------------------------
 
     print(f"P3\n{cam.hres} {cam.vres}\n255")
     
@@ -61,29 +75,28 @@ def main():
             hit_color = None
             
             for obj in scene_data.objects:
-                t = float('inf')
-                
                 if obj.obj_type == "sphere":
-                    centro = obj.relative_pos
-                    raio = obj.get_num("radius")
-                    t = intersect_sphere(cam.C, ray_dir, centro, raio)
-                    
+                    # (Mesmo código da esfera)
+                    t = intersect_sphere(cam.C, ray_dir, obj.relative_pos, obj.get_num("radius"))
+                    if t < closest_t:
+                        closest_t = t
+                        hit_color = obj.material.color
+                        
                 elif obj.obj_type == "plane":
-                    ponto_plano = obj.relative_pos
+                    # (Mesmo código do plano)
                     normal = obj.get_vetor("normal").normalize()
-                    t = intersect_plane(cam.C, ray_dir, ponto_plano, normal)
-                
+                    t = intersect_plane(cam.C, ray_dir, obj.relative_pos, normal)
+                    if t < closest_t:
+                        closest_t = t
+                        hit_color = obj.material.color
+                        
                 elif obj.obj_type == "mesh":
-                    # Busca a malha pré-carregada na memória
-                    mesh_reader = loaded_meshes[obj.get_property("path")]
-                    
-                    # Testa interseção com CADA triângulo da malha
-                    for face_pts in mesh_reader.get_face_points():
-                        t = intersect_triangle(cam.C, ray_dir, face_pts[0], face_pts[1], face_pts[2])
-
-                if t < closest_t:
-                    closest_t = t
-                    hit_color = obj.material.color
+                    # Agora iteramos pela lista de triângulos JÁ TRANSFORMADOS exclusivos deste objeto!
+                    for v0, v1, v2 in obj.faces_transformadas:
+                        t = intersect_triangle(cam.C, ray_dir, v0, v1, v2)
+                        if t < closest_t:
+                            closest_t = t
+                            hit_color = obj.material.color
             
             if hit_color is not None:
                 r = int(255.999 * hit_color.r)
@@ -95,7 +108,6 @@ def main():
             print(f"{r} {g} {b}")
             
     print("\nRenderização concluída com sucesso!", file=sys.stderr)
-
 
 if __name__ == "__main__":
     main()
