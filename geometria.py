@@ -75,21 +75,22 @@ def intersect_plane(origem: Ponto, direcao: Vetor, p0: Ponto, normal: Vetor) -> 
 
 def intersect_triangle(origem: Ponto, direcao: Vetor, v0: Ponto, v1: Ponto, v2: Ponto) -> float:
     """
-    Calcula a interseção entre um raio e um triângulo usando o Teste de Arestas 
-    (equivalente às coordenadas baricêntricas por áreas sinalizadas).
+    Calcula a interseção entre um raio e um triângulo usando o Teste de Áreas.
     """
-    # 1. Encontra a normal do plano do triângulo
+    # 1. Encontra o vetor normal (NÃO unitário) e a Área do triângulo original
     aresta1 = v1 - v0
     aresta2 = v2 - v0
-    normal = aresta1.cross(aresta2)  # O vetor normal dita a "frente" do triângulo
+    vetor_cruzado_abc = aresta1.cross(aresta2)
     
-    # 2. Interseção do Raio com o Plano
-    denom = direcao.dot(normal)
+    area_ABC = vetor_cruzado_abc.magnitude() / 2.0
+    
+    # 2. Interseção do Raio com o Plano (usando a normal não-unitária)
+    denom = direcao.dot(vetor_cruzado_abc)
     if abs(denom) < 1e-8:
         return float('inf') # Raio paralelo ao triângulo
         
     p0_origem = v0 - origem
-    t = p0_origem.dot(normal) / denom
+    t = p0_origem.dot(vetor_cruzado_abc) / denom
     
     if t < 0.001:
         return float('inf') # Triângulo está atrás da câmera
@@ -97,26 +98,20 @@ def intersect_triangle(origem: Ponto, direcao: Vetor, v0: Ponto, v1: Ponto, v2: 
     # 3. Descobre o Ponto P exato da interseção no plano
     p = origem + (direcao * t)
     
-    # 4. Checagem Baricêntrica (Fórmula de áreas sinalizadas)
-    # Se o ponto P estiver à direita de alguma aresta (sentido anti-horário), ele está fora.
+    # 4. Calcula a área dos 3 sub-triângulos usando sua fórmula (vetores saindo dos vértices originais)
+    area_PAB = (v1 - v0).cross(p - v0).magnitude() / 2.0
+    area_PBC = (v2 - v1).cross(p - v1).magnitude() / 2.0
+    area_PCA = (v0 - v2).cross(p - v2).magnitude() / 2.0
     
-    # Aresta 0: v0 -> v1
-    edge0 = v1 - v0
-    vp0 = p - v0
-    if normal.dot(edge0.cross(vp0)) < 0:
-        return float('inf')
+    # 5. Compara se a soma das áreas é igual à área original
+    soma_areas = area_PAB + area_PBC + area_PCA
+    
+    if abs(soma_areas - area_ABC) > 1e-5:
+        return float('inf') # Ponto P está FORA do triângulo
         
-    # Aresta 1: v1 -> v2
-    edge1 = v2 - v1
-    vp1 = p - v1
-    if normal.dot(edge1.cross(vp1)) < 0:
-        return float('inf')
-        
-    # Aresta 2: v2 -> v0
-    edge2 = v0 - v2
-    vp2 = p - v2
-    if normal.dot(edge2.cross(vp2)) < 0:
-        return float('inf')
-        
-    # Se passou por todos os testes, o ponto está dentro do triângulo!
+    # 6. Coeficientes baricêntricos
+    alpha = area_PBC / area_ABC
+    beta = area_PCA / area_ABC
+    gamma = area_PAB / area_ABC
+    
     return t
