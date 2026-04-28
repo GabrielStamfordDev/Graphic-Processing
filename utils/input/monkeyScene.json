@@ -1,12 +1,10 @@
 {
-  "camera": {
-    "lookfrom": [10.0, 5.0, 15.0],
-    "lookat": [9.4655, 4.7327, 14.1982],
-    "upVector": [-0.1482, 0.9636, -0.2224],
-    "image_width": 1920,
-    "image_height": 1080,
-    "screen_distance": 0.75
-  },
+ {
+  "lookfrom": [0, 0, 5],
+  "lookat":   [0, 0, 0],
+  "upVector": [0, 1, 0],
+  "screen_distance": 1.0
+}
   "globalLight": [0.01, 0.01, 0.01],
   "lights": [
     {
@@ -110,6 +108,17 @@
       "relativePos": [0.0, 0.0, 0.0],
       "material": "material1",
       "path": "utils/input/cubo.obj"
+    },
+    {
+      "type": "mesh",
+      "relativePos": [0.0, 5.0, 0.0],
+      "material": "material2",
+      "path": "utils/input/cubo.obj",
+      "transform": [
+        { "type": "scaling", "factors": [1, 1, 1] },
+        { "type": "rotation", "angle": [0, 0, 0] },
+        { "type": "translation", "vector": [0, 5, 0] }
+      ]
     },
     {
       "type": "sphere",

@@ -3,80 +3,75 @@ import sys
 import os
 
 SCENE_DEFAULT = "utils/input/sampleScene.json"
-OUTPUT_PPM = "output.ppm"
-OUTPUT_PNG = "output.png"
+
+OUTPUTS = {
+    "before": {
+        "ppm": "before.ppm",
+        "png": "before.png",
+        "flag": "--no-transform"
+    },
+    "after": {
+        "ppm": "after.ppm",
+        "png": "after.png",
+        "flag": None
+    }
+}
 
 
 def ensure_pillow():
-    """
-    Garante que a biblioteca Pillow esteja disponível no ambiente.
-    Caso não esteja instalada, realiza a instalação automaticamente
-    utilizando o mesmo interpretador Python em execução.
-    """
     try:
         from PIL import Image
         return Image
     except ImportError:
-        print("Instalando dependência necessária (Pillow)...")
+        print("Instalando Pillow...")
         subprocess.check_call([sys.executable, "-m", "pip", "install", "pillow"])
         from PIL import Image
         return Image
 
 
 def resolve_scene():
-    """
-    Determina qual arquivo de cena será utilizado.
-
-    - Se um argumento for passado via linha de comando, ele será usado.
-    - Caso contrário, utiliza a cena padrão definida no script.
-
-    Retorna o caminho válido da cena ou encerra o programa em caso de erro.
-    """
     scene = sys.argv[1] if len(sys.argv) > 1 else SCENE_DEFAULT
 
     if not os.path.exists(scene):
-        print(f"Erro: arquivo de cena não encontrado -> {scene}")
+        print(f"Erro: cena não encontrada -> {scene}")
         sys.exit(1)
 
     return scene
 
 
-def render_scene(scene):
-    """
-    Executa o ray tracer principal (main.py), redirecionando a saída
-    padrão para um arquivo PPM.
+def render(scene, output_ppm, flag=None):
+    print(f"Renderizando -> {output_ppm}")
 
-    O stderr é mantido no terminal para exibir progresso e mensagens
-    de execução.
-    """
-    print(f"Iniciando renderização da cena: {scene}")
+    cmd = [sys.executable, "main.py", scene]
 
-    with open(OUTPUT_PPM, "w") as f:
-        subprocess.run(
-            [sys.executable, "main.py", scene],
-            stdout=f,
-            stderr=sys.stderr
-        )
+    if flag:
+        cmd.append(flag)
+
+    with open(output_ppm, "w") as f:
+        subprocess.run(cmd, stdout=f, stderr=sys.stderr)
 
 
-def convert_to_png(Image):
-    """
-    Converte o arquivo PPM gerado para o formato PNG utilizando Pillow.
-    """
-    print("Convertendo imagem para PNG...")
-
-    img = Image.open(OUTPUT_PPM)
-    img.save(OUTPUT_PNG)
+def convert(Image, input_ppm, output_png):
+    print(f"Convertendo {input_ppm} -> {output_png}")
+    img = Image.open(input_ppm)
+    img.save(output_png)
 
 
 def main():
     Image = ensure_pillow()
     scene = resolve_scene()
-    render_scene(scene)
-    convert_to_png(Image)
 
-    print("Processo finalizado com sucesso.")
-    print(f"Arquivo gerado: {OUTPUT_PNG}")
+    # 🔷 BEFORE (sem transformação)
+    render(scene, OUTPUTS["before"]["ppm"], OUTPUTS["before"]["flag"])
+    convert(Image, OUTPUTS["before"]["ppm"], OUTPUTS["before"]["png"])
+
+    # 🔷 AFTER (com transformação)
+    render(scene, OUTPUTS["after"]["ppm"], OUTPUTS["after"]["flag"])
+    convert(Image, OUTPUTS["after"]["ppm"], OUTPUTS["after"]["png"])
+
+    print("\n✔ Processo concluído")
+    print(f"→ {OUTPUTS['before']['png']}")
+    print(f"→ {OUTPUTS['after']['png']}")
 
 
 if __name__ == "__main__":

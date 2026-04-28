@@ -73,7 +73,7 @@ def intersect_triangles_numpy(origem: Ponto, direcao: Vetor,
     v = f * (q @ dire)                                  # (N,)  ← corrigido
     mask &= (v >= 0.0) & ((u + v) <= 1.0)
 
-    t = f * (aresta2 @ dire)                            # (N,)  ← corrigido
+    t = f * np.einsum('ij,ij->i', aresta2, q)                       # (N,)  ← corrigido
     mask &= (t > 0.001)
 
     if not np.any(mask):
