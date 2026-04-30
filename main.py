@@ -1,5 +1,7 @@
 import sys
 import numpy as np
+from pathlib import Path
+
 from utils.Scene.sceneParser import SceneJsonLoader
 from utils.MeshReader.ObjReader import ObjReader
 from camera import Camera
@@ -10,6 +12,21 @@ from transformacoes import (
     aplicar_matriz_ponto
 )
 
+
+def intersect_object(obj, ray_origin, ray_dir):
+    if obj.obj_type == "sphere":
+        return intersect_sphere(ray_origin, ray_dir, obj.relative_pos, obj.get_num("radius"))
+
+    if obj.obj_type == "plane":
+        normal = obj.get_vetor("normal").normalize()
+        return intersect_plane(ray_origin, ray_dir, obj.relative_pos, normal)
+
+    if obj.obj_type == "mesh":
+        return intersect_triangles_numpy(ray_origin, ray_dir, obj.np_v0, obj.np_v1, obj.np_v2)
+
+    return float('inf')
+
+
 def main():
     if len(sys.argv) < 2:
         print("Use: python main.py <cena.json> [--no-transform]", file=sys.stderr)
@@ -17,7 +34,6 @@ def main():
 
     scene_file = sys.argv[1]
 
-    # 🔷 Flag de controle
     apply_transform = True
     if len(sys.argv) > 2 and sys.argv[2] == "--no-transform":
         apply_transform = False
@@ -27,22 +43,32 @@ def main():
 
     # --- PRÉ-CARREGAMENTO ---
     loaded_meshes = {}
+    valid_objects = []
 
     for obj in scene_data.objects:
+
         if obj.obj_type == "mesh":
             obj_path = obj.get_property("path")
+
+            # 🔴 ignora arquivo inexistente
+            if not Path(obj_path).exists():
+                print(f"[AVISO] OBJ não encontrado: {obj_path} → ignorando objeto", file=sys.stderr)
+                continue
 
             if obj_path not in loaded_meshes:
                 print(f"Carregando: {obj_path}...", file=sys.stderr)
                 loaded_meshes[obj_path] = ObjReader(obj_path)
 
             mesh_reader = loaded_meshes[obj_path]
-
             faces = mesh_reader.get_face_points()
+
+            # 🔴 ignora OBJ inválido/vazio
+            if not faces:
+                print(f"[AVISO] OBJ vazio ou inválido: {obj_path} → ignorando", file=sys.stderr)
+                continue
 
             v0_list, v1_list, v2_list = [], [], []
 
-            # 🔷 Só calcula matriz se necessário
             if apply_transform:
                 M_total = np.eye(4)
 
@@ -61,10 +87,8 @@ def main():
                         Mz = matriz_rotacao_z(t.data.z)
                         M_atual = Mz @ My @ Mx
 
-                    # 🔴 ORDEM CORRIGIDA
                     M_total = M_atual @ M_total
 
-            # 🔷 Monta os triângulos
             for face_pts in faces:
                 if apply_transform:
                     v0t = aplicar_matriz_ponto(M_total, face_pts[0])
@@ -85,6 +109,12 @@ def main():
 
             print(f"  → {len(faces)} triângulos.", file=sys.stderr)
 
+        # 🔴 só adiciona objetos válidos
+        valid_objects.append(obj)
+
+    # 🔴 substitui lista original
+    scene_data.objects = valid_objects
+
     # --- RENDER ---
     print(f"P3\n{cam.hres} {cam.vres}\n255")
 
@@ -98,31 +128,11 @@ def main():
             hit_color = None
 
             for obj in scene_data.objects:
+                t = intersect_object(obj, cam.C, ray_dir)
 
-                if obj.obj_type == "sphere":
-                    t = intersect_sphere(cam.C, ray_dir, obj.relative_pos, obj.get_num("radius"))
-
-                    if t < closest_t:
-                        closest_t = t
-                        hit_color = obj.material.color
-
-                elif obj.obj_type == "plane":
-                    normal = obj.get_vetor("normal").normalize()
-                    t = intersect_plane(cam.C, ray_dir, obj.relative_pos, normal)
-
-                    if t < closest_t:
-                        closest_t = t
-                        hit_color = obj.material.color
-
-                elif obj.obj_type == "mesh":
-                    t = intersect_triangles_numpy(
-                        cam.C, ray_dir,
-                        obj.np_v0, obj.np_v1, obj.np_v2
-                    )
-
-                    if t < closest_t:
-                        closest_t = t
-                        hit_color = obj.material.color
+                if t < closest_t:
+                    closest_t = t
+                    hit_color = obj.material.color
 
             if hit_color is not None:
                 r = int(255.999 * hit_color.r)

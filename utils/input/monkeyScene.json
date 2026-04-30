@@ -1,10 +1,12 @@
 {
- {
-  "lookfrom": [0, 0, 5],
-  "lookat":   [0, 0, 0],
-  "upVector": [0, 1, 0],
-  "screen_distance": 1.0
-}
+  "camera": {
+    "lookfrom": [10.0, 5.0, 15.0],
+    "lookat": [9.4655, 4.7327, 14.1982],
+    "upVector": [-0.1482, 0.9636, -0.2224],
+    "image_width": 500,
+    "image_height": 500,
+    "screen_distance": 0.75
+  },
   "globalLight": [0.01, 0.01, 0.01],
   "lights": [
     {
