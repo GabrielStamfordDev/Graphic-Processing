@@ -4,17 +4,9 @@ import os
 
 SCENE_DEFAULT = "utils/input/sampleScene.json"
 
-OUTPUTS = {
-    "before": {
-        "ppm": "before.ppm",
-        "png": "before.png",
-        "flag": "--no-transform"
-    },
-    "after": {
-        "ppm": "after.ppm",
-        "png": "after.png",
-        "flag": None
-    }
+OUTPUT = {
+    "ppm": "output.ppm",
+    "png": "output.png",
 }
 
 
@@ -39,13 +31,10 @@ def resolve_scene():
     return scene
 
 
-def render(scene, output_ppm, flag=None):
-    print(f"Renderizando -> {output_ppm}")
+def render(scene, output_ppm):
+    print(f"Renderizando (com transformações) -> {output_ppm}")
 
     cmd = [sys.executable, "main.py", scene]
-
-    if flag:
-        cmd.append(flag)
 
     with open(output_ppm, "w") as f:
         subprocess.run(cmd, stdout=f, stderr=sys.stderr)
@@ -61,17 +50,12 @@ def main():
     Image = ensure_pillow()
     scene = resolve_scene()
 
-    # 🔷 BEFORE (sem transformação)
-    render(scene, OUTPUTS["before"]["ppm"], OUTPUTS["before"]["flag"])
-    convert(Image, OUTPUTS["before"]["ppm"], OUTPUTS["before"]["png"])
-
-    # 🔷 AFTER (com transformação)
-    render(scene, OUTPUTS["after"]["ppm"], OUTPUTS["after"]["flag"])
-    convert(Image, OUTPUTS["after"]["ppm"], OUTPUTS["after"]["png"])
+    # 🔷 SOMENTE AFTER
+    render(scene, OUTPUT["ppm"])
+    convert(Image, OUTPUT["ppm"], OUTPUT["png"])
 
     print("\n✔ Processo concluído")
-    print(f"→ {OUTPUTS['before']['png']}")
-    print(f"→ {OUTPUTS['after']['png']}")
+    print(f"→ {OUTPUT['png']}")
 
 
 if __name__ == "__main__":
