@@ -106,13 +106,13 @@ int main(int argc, char** argv){
                     M_total[2][2] * M_total[2][2]
                 );
                 double s = (sx + sy + sz) / 3.0; //max?
-                objeto.numericData["radius"] *= s;
+                objeto.numericData.at("radius") *= s;
             }
             else if(objeto.objType == "plane"){
                 objeto.relativePos = aplicar_matriz_ponto(M_total, objeto.relativePos);
-                Vetor normal = objeto.vetorPointData["normal"];
+                Vetor normal = objeto.vetorPointData.at("normal");
                 normal = aplicar_matriz_normal(M_total, normal);
-                objeto.vetorPointData["normal"] = normal;
+                objeto.vetorPointData.at("normal") = normal;
             }
         }
 
