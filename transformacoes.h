@@ -15,3 +15,4 @@ Matriz4x4 matriz_rotacao_z(double angulo_graus);
 
 Ponto aplicar_matriz_ponto(const Matriz4x4& matriz, const Ponto& ponto);
 Vetor aplicar_matriz_vetor(const Matriz4x4& matriz, const Vetor& vetor);
+Vetor aplicar_matriz_normal(const Matriz4x4& matriz, const Vetor& normal);
