@@ -14,9 +14,36 @@ public:
         return Ponto(x + v.getX(), y + v.getY(), z + v.getZ());
     }
 
+    Ponto& operator+=(const Vetor& v) {
+        x += v.getX();
+        y += v.getY();
+        z += v.getZ();
+        return *this;
+    }
+
+    // Ponto - Vetor → Ponto (recuo)
+    Ponto operator-(const Vetor& v) const {
+        return Ponto(x - v.getX(), y - v.getY(), z - v.getZ());
+    }
+
+    Ponto& operator-=(const Vetor& v) {
+        x -= v.getX();
+        y -= v.getY();
+        z -= v.getZ();
+        return *this;
+    }
+
     // Ponto - Ponto → Vetor (direção entre pontos)
     Vetor operator-(const Ponto& p) const {
         return Vetor(x - p.getX(), y - p.getY(), z - p.getZ());
+    }
+
+    bool operator==(const Ponto& p) const {
+        return x == p.x && y == p.y && z == p.z;
+    }
+
+    bool operator!=(const Ponto& p) const {
+        return !(*this == p);
     }
 
     // impressão

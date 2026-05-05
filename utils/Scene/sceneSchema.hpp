@@ -64,6 +64,9 @@ struct ObjectData {
     map<string, string> otherProperties;
     
     vector<TransformData> transforms; // a ordem importa!
+    vector<Ponto> mesh_v0;
+    vector<Ponto> mesh_v1;
+    vector<Ponto> mesh_v2;
 
     double  getNum     (string key){ return numericData[key]; }
     int64_t getInt     (string key){ return (int64_t)numericData[key]; }

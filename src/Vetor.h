@@ -14,9 +14,28 @@ public:
         return Vetor(x + v.x, y + v.y, z + v.z);
     }
 
+    Vetor& operator+=(const Vetor& v) {
+        x += v.x;
+        y += v.y;
+        z += v.z;
+        return *this;
+    }
+
     // Vetor - Vetor
     Vetor operator-(const Vetor& v) const {
         return Vetor(x - v.x, y - v.y, z - v.z);
+    }
+
+    Vetor& operator-=(const Vetor& v) {
+        x -= v.x;
+        y -= v.y;
+        z -= v.z;
+        return *this;
+    }
+
+    // Negação unária
+    Vetor operator-() const {
+        return Vetor(-x, -y, -z);
     }
 
     // Escalar * Vetor
@@ -46,6 +65,10 @@ public:
         return std::sqrt(x * x + y * y + z * z);
     }
 
+    double magnitude() const {
+        return length();
+    }
+
     Vetor normalize() const {
         double len = length();
         if (len == 0) return Vetor(0, 0, 0);
@@ -59,6 +82,14 @@ public:
     double getX() const { return x; }
     double getY() const { return y; }
     double getZ() const { return z; }
+
+    bool operator==(const Vetor& v) const {
+        return x == v.x && y == v.y && z == v.z;
+    }
+
+    bool operator!=(const Vetor& v) const {
+        return !(*this == v);
+    }
 
 private:
     double x, y, z;

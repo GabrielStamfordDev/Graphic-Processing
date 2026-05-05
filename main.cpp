@@ -1,13 +1,158 @@
+#include <unordered_map>
+#include <limits>
+#include <memory>
+#include <utility>
+#include <vector>
+#include <string>
+#include <filesystem>
 #include <iostream>
 #include "src/Ponto.h"
 #include "src/Vetor.h"
+#include "Camera.h"
+#include "geometry.cpp"
+#include "transformacoes.cpp"
+#include "utils/scene/sceneParser.cpp"
+#include "utils/MeshReader/ObjReader.cpp"
 using namespace std;
+using hit_color = array<double, 3>;
 
-int main(){
-    Ponto p(1, 2, 3);
-    Vetor v(3, 2, 1);
+double intersect_object(const ObjectData& obj, const Ponto& ray_origin, const Vetor& ray_dir) {
+    if (obj.objType == "sphere") {
+        double raio = obj.numericData.at("radius");
+        return intersect_sphere(ray_origin, ray_dir, obj.relativePos, raio);
+    }
 
-    cout << p << endl;
-    cout << v << endl;
-    cout << p+v << endl;
+    if (obj.objType == "plane") {
+        Vetor normal = obj.vetorPointData.at("normal");
+        normal = normal.normalize();
+        return intersect_plane(ray_origin, ray_dir, obj.relativePos, normal);
+    }
+
+    if (obj.objType == "mesh") {
+        double closest_t = numeric_limits<double>::infinity();
+        for (size_t i = 0; i < obj.mesh_v0.size(); ++i) {
+            double t = intersect_triangle(ray_origin, ray_dir, 
+                                         obj.mesh_v0[i], obj.mesh_v1[i], obj.mesh_v2[i]);
+            if (t < closest_t) {
+                closest_t = t;
+            }
+        }
+        return closest_t;
+    }
+    return numeric_limits<double>::infinity();
+}
+
+int main(int argc, char** argv){
+    ios::sync_with_stdio(false);cin.tie(0);
+    if(argc < 2){
+        cerr<<"Uso: "<<argv[0]<<" cena.josn\n";
+        return 1;
+    }
+    SceneData scene = SceneJsonLoader::loadFile(argv[1]);
+    cerr<<"Resolucao: "<<scene.camera.image_width<<" x "<<scene.camera.image_height<<'\n';
+    Camera cam(scene.camera);
+
+    bool transformar = true;
+    if(argc > 2 && argv[2] == "--no-transform") transformar = false;
+
+    unordered_map<string, unique_ptr<objReader>> loaded_meshes;
+    vector<ObjectData> valid_objects;
+
+
+    for (const auto& src_objeto : scene.objects) {
+        ObjectData objeto = src_objeto; // local mutable copy, avoids modifying original
+        if (objeto.objType == "mesh"){
+            string obj_path = objeto.getProperty("path");
+            if(!filesystem::exists(obj_path)){
+                cerr<<"Aviso! OBJ nao encontrado: "<<obj_path<<" ignorando Objeto\n";
+                continue;
+            }
+            // Estou considerando que não existe duas referencias para carregar o mesmo objeto
+            loaded_meshes[obj_path] = make_unique<objReader>(obj_path);
+            objReader& mesh_reader = *loaded_meshes[obj_path];
+            auto faces = mesh_reader.getFacePoints();
+            if(faces.empty()){
+                cerr<<"Aviso! OBJ vazio invalido: "<<obj_path<<" ignorando Objeto\n";
+                continue;
+            }
+            vector<Ponto> v0_list, v1_list, v2_list;
+            Matriz4x4 M_total = matriz_identidade();
+            if(transformar){
+                for(const auto& t : objeto.transforms){
+                    Matriz4x4 M_atual = matriz_identidade();
+                    if(t.tType == "scaling"){
+                        M_atual = matriz_escala(t.data.getX(), t.data.getY(), t.data.getZ());
+                    }
+                    else if(t.tType == "translation"){
+                        M_atual = matriz_translacao(t.data.getX(),t.data.getY(),t.data.getZ());
+                    }
+                    else if(t.tType == "rotation"){
+                        Matriz4x4 Mx = matriz_rotacao_x(t.data.getX());
+                        Matriz4x4 My = matriz_rotacao_y(t.data.getY());
+                        Matriz4x4 Mz = matriz_rotacao_z(t.data.getZ());
+                        M_atual = Mz * My * Mx;
+                    }
+                    M_total = M_total * M_atual;
+                }
+            }
+            Ponto v0t, v1t, v2t;
+            for(const auto& face_pts : faces){
+                if(transformar){
+                    v0t = aplicar_matriz_ponto(M_total, face_pts[0]);
+                    v1t = aplicar_matriz_ponto(M_total, face_pts[1]);
+                    v2t = aplicar_matriz_ponto(M_total, face_pts[2]);
+                }
+                else{
+                    v0t = face_pts[0];
+                    v1t = face_pts[1];
+                    v2t = face_pts[2];
+                }
+                v0_list.push_back(v0t);
+                v1_list.push_back(v1t);
+                v2_list.push_back(v2t);
+            }
+            objeto.mesh_v0 = move(v0_list);
+            objeto.mesh_v1 = move(v1_list);
+            objeto.mesh_v2 = move(v2_list);
+        }
+        valid_objects.push_back(move(objeto));
+    }
+
+    scene.objects = valid_objects;
+
+    hit_color cor;
+    double closest_t; double t;
+    Vetor ray_dir;
+    int r, g, b;
+    cout<<"P3\n"<<cam.hres<<' '<<cam.vres<<"\n255\n";
+    for(int j = 0; j < cam.vres; j ++){
+        cerr<<"Linha "<<j<<'/'<<cam.vres<<'\r'<<flush;
+        for(int i = 0; i < cam.hres; i++){
+            ray_dir = cam.getRayDirection(i, j);
+            closest_t = numeric_limits<double>::max();
+            cor = {-1.0,-1.0,-1.0};
+            for(const auto& objeto : scene.objects){
+                t = intersect_object(objeto, cam.C, ray_dir);
+                if(t < closest_t){
+                    closest_t = t;
+                    cor[0] = objeto.material.color.r;
+                    cor[1] = objeto.material.color.g;
+                    cor[2] = objeto.material.color.b;
+                }
+            }
+
+            if(cor[0] != -1.0){
+                r = (int)(255.999 * cor[0]);
+                g = (int)(255.999 * cor[1]);
+                b = (int)(255.999 * cor[2]);
+            }
+            else{
+                r = 0;
+                g = 0;
+                b = 0;
+            }
+            cout<<r<<' '<<g<<' '<<b<<'\n';
+        }
+    }
+    cerr<<"\n Renderizacao concluida!";
 }
