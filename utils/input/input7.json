@@ -1,0 +1,50 @@
+{
+  "camera": {
+    "lookfrom": [6, 3, 10],
+    "lookat": [0, 0, 0],
+    "upVector": [0, 1, 0],
+    "image_width": 500,
+    "image_height": 500,
+    "screen_distance": 0.75
+  },
+
+  "globalLight": [0.1, 0.1, 0.1],
+
+  "lights": [
+    {
+      "position": [10, 10, 10],
+      "color": [1, 1, 1],
+      "name": ""
+    }
+  ],
+
+  "materials": {
+    "blue": {
+      "name": "blue",
+      "color": [0, 0, 1],
+      "ks": [0, 0, 0],
+      "ka": [0, 0, 1],
+      "kr": [0, 0, 0],
+      "kt": [0, 0, 0],
+      "ns": 1,
+      "ni": 1,
+      "d": 1
+    }
+  },
+
+  "objects": [
+    {
+      "type": "sphere",
+      "relativePos": [0, 0, 0],
+      "material": "blue",
+      "radius": 1,
+
+      "transform": [
+        {
+          "type": "rotation",
+          "angle": [45, 45, 45]
+        }
+      ]
+    }
+  ]
+}

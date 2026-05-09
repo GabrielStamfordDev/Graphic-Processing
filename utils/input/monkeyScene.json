@@ -147,3 +147,53 @@
     }
   ]
 }
+{
+  "camera": {
+    "lookfrom": [8.0, 4.0, 12.0],
+    "lookat": [0.0, 0.0, 0.0],
+    "upVector": [0.0, 1.0, 0.0],
+    "image_width": 500,
+    "image_height": 500,
+    "screen_distance": 0.75
+  },
+
+  "globalLight": [0.1, 0.1, 0.1],
+
+  "lights": [
+    {
+      "position": [10.0, 10.0, 10.0],
+      "color": [1.0, 1.0, 1.0],
+      "name": ""
+    }
+  ],
+
+  "materials": {
+    "red": {
+      "name": "red",
+      "color": [1.0, 0.0, 0.0],
+      "ks": [0,0,0],
+      "ka": [1,0,0],
+      "kr": [0,0,0],
+      "kt": [0,0,0],
+      "ns": 1,
+      "ni": 1,
+      "d": 1
+    }
+  },
+
+  "objects": [
+    {
+      "type": "mesh",
+      "relativePos": [0,0,0],
+      "material": "red",
+      "path": "utils/input/cubo.obj",
+
+      "transform": [
+        {
+          "type": "translation",
+          "vector": [5,0,0]
+        }
+      ]
+    }
+  ]
+}
