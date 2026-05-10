@@ -118,7 +118,7 @@
       "path": "utils/input/cubo.obj",
       "transform": [
         { "type": "scaling", "factors": [1, 1, 1] },
-        { "type": "rotation", "angle": [0, 0, 0] },
+        { "type": "rotation", "angle": [0.78, 0.78, 0] },
         { "type": "translation", "vector": [0, 5, 0] }
       ]
     },
@@ -141,7 +141,7 @@
       "path": "utils/input/monkey.obj",
       "transform": [
         { "type": "scaling", "factors": [2, 1, 1] },
-        { "type": "rotation", "angle": [0, 0, 0] },
+        { "type": "rotation", "angle": [0.78, 0.78, 0] },
         { "type": "translation", "vector": [0, -3, 4] }
       ]
     }

@@ -17,30 +17,47 @@
 using namespace std;
 using hit_color = array<double, 3>;
 
-Matriz4x4 build_transform_matriz(vector<TransformData>& transforma){
+Matriz4x4 build_transform_matriz(vector<TransformData>& transforma, Ponto& relativePos, const string& tipo){
     Matriz4x4 M_total = matriz_identidade();
     Matriz4x4 M_atual;
-    Matriz4x4 Mx, My, Mz;
+    Matriz4x4 Mx, My, Mz, Mpinv, Mp, ME;
+    Ponto pivo_acumulado;
+
+    if(tipo == "mesh") pivo_acumulado = Ponto(0, 0, 0);
+    else pivo_acumulado = relativePos;
+
     for(const auto& t : transforma){
         M_atual = matriz_identidade();
-        if(t.tType == "scaling"){
-            M_atual = matriz_escala(t.data.getX(), t.data.getY(), t.data.getZ());
+        if(t.tType == "scaling" && tipo != "plane"){
+            Mpinv = matriz_translacao(-pivo_acumulado.getX(),-pivo_acumulado.getY(),-pivo_acumulado.getZ());
+            Mp = matriz_translacao(pivo_acumulado.getX(),pivo_acumulado.getY(),pivo_acumulado.getZ());
+            ME = matriz_escala(t.data.getX(), t.data.getY(), t.data.getZ());
+            M_atual = Mp * ME * Mpinv;
         }
         else if(t.tType == "translation"){
             M_atual = matriz_translacao(t.data.getX(),t.data.getY(),t.data.getZ());
+            pivo_acumulado = aplicar_matriz_ponto(M_atual, pivo_acumulado);
         }
-        else if(t.tType == "rotation"){
+        else if(t.tType == "rotation" && tipo != "sphere"){
             Mx = matriz_rotacao_x(t.data.getX());
             My = matriz_rotacao_y(t.data.getY());
             Mz = matriz_rotacao_z(t.data.getZ());
-            M_atual = Mz * My * Mx;
+            Mpinv = matriz_translacao(-pivo_acumulado.getX(),-pivo_acumulado.getY(),-pivo_acumulado.getZ());
+            Mp = matriz_translacao(pivo_acumulado.getX(),pivo_acumulado.getY(),pivo_acumulado.getZ());
+            M_atual =  Mp * Mz * My * Mx * Mpinv;
         }
-        M_total = M_total * M_atual;
+        M_total = M_atual * M_total;
     }
+
+    if(tipo == "mesh"){
+        Mp = matriz_translacao(relativePos.getX(),relativePos.getY(),relativePos.getZ());
+        M_total = Mp * M_total;
+    }
+
     return M_total;
 }
 
-double intersect_object(const ObjectData& obj, const Ponto& ray_origin, const Vetor& ray_dir) {
+double intersect_object(const ObjectData& obj, const Ponto& ray_origin, const Vetor& ray_dir){
     if(obj.objType == "sphere"){
         double raio = obj.numericData.at("radius");
         return intersect_sphere(ray_origin, ray_dir, obj.relativePos, raio);
@@ -82,12 +99,12 @@ int main(int argc, char** argv){
     unordered_map<string, unique_ptr<objReader>> loaded_meshes;
     vector<ObjectData> valid_objects;
 
-    for (const auto& src_objeto : scene.objects) {
+    for (const auto& src_objeto : scene.objects){
         ObjectData objeto = src_objeto;
         Matriz4x4 M_total = matriz_identidade();
 
         if(transformar && !objeto.transforms.empty()){
-            M_total = build_transform_matriz(objeto.transforms);
+            M_total = build_transform_matriz(objeto.transforms, objeto.relativePos, objeto.objType);
             if(objeto.objType == "sphere"){
                 objeto.relativePos = aplicar_matriz_ponto(M_total, objeto.relativePos);
                 double sx = sqrt(
@@ -105,7 +122,7 @@ int main(int argc, char** argv){
                     M_total[1][2] * M_total[1][2] +
                     M_total[2][2] * M_total[2][2]
                 );
-                double s = (sx + sy + sz) / 3.0; //max?
+                double s = (sx + sy + sz) / 3.0; //formalismo
                 objeto.numericData.at("radius") *= s;
             }
             else if(objeto.objType == "plane"){
@@ -164,7 +181,7 @@ int main(int argc, char** argv){
     for(int j = 0; j < cam.vres; j ++){
         cerr<<"Linha "<<j<<'/'<<cam.vres<<'\r'<<flush;
         for(int i = 0; i < cam.hres; i++){
-            ray_dir = cam.getRayDirection(i, j);
+            ray_dir = cam.getRayDirection(cam.hres - 1 - i, j);
             closest_t = numeric_limits<double>::infinity();
             cor_valida = false;
             for(const auto& objeto : scene.objects){

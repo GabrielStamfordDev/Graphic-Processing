@@ -46,16 +46,16 @@ double intersect_triangle(const Ponto& origem, const Vetor& direcao, const Ponto
 	double a = aresta1.dot(h);
 	if(std::abs(a) < kEpsilon) return infinity();
 
-	double f = 1.0 / a;
+	double det = 1.0 / a;
 	Vetor s = origem - v0;
-	double u = f * s.dot(h);
-	if(u < 0.0 || u > 1.0) return infinity();
+	double alfa = det * s.dot(h);
+	if(alfa < 0.0 || alfa > 1.0) return infinity();
 
 	Vetor q = s.cross(aresta1);
-	double v = f * direcao.dot(q);
-	if(v < 0.0 || (u + v) > 1.0) return infinity();
+	double beta = det * direcao.dot(q);
+	if(beta < 0.0 || (alfa + beta) > 1.0) return infinity();
 
-	double t = f * aresta2.dot(q);
+	double t = det * aresta2.dot(q);
 	if(t > kMinT) return t;
 
 	return infinity();

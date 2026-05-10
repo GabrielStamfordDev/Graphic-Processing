@@ -1,14 +1,14 @@
 #include "transformacoes.h"
 #include <cmath>
 
-namespace {
+namespace{
     constexpr double kPi = 3.141592653589793238462643383279502884;
     double graus_para_radianos(double angulo_graus){
         return angulo_graus * (kPi / 180.0);
     }
 }
 
-Matriz4x4 operator*(const Matriz4x4& A, const Matriz4x4& B) {
+Matriz4x4 operator*(const Matriz4x4& A, const Matriz4x4& B){
     Matriz4x4 C{};
     for (int i = 0; i < 4; ++i) {
         for (int j = 0; j < 4; ++j) {
@@ -20,7 +20,7 @@ Matriz4x4 operator*(const Matriz4x4& A, const Matriz4x4& B) {
     return C;
 }
 
-Matriz4x4 matriz_translacao(double dx, double dy, double dz) {
+Matriz4x4 matriz_translacao(double dx, double dy, double dz){
 	Matriz4x4 matriz{};
 	matriz[0] = {1.0, 0.0, 0.0, dx};
 	matriz[1] = {0.0, 1.0, 0.0, dy};
@@ -29,7 +29,7 @@ Matriz4x4 matriz_translacao(double dx, double dy, double dz) {
 	return matriz;
 }
 
-Matriz4x4 matriz_escala(double sx, double sy, double sz) {
+Matriz4x4 matriz_escala(double sx, double sy, double sz){
 	Matriz4x4 matriz{};
 	matriz[0] = {sx,  0.0, 0.0, 0.0};
 	matriz[1] = {0.0, sy,  0.0, 0.0};
@@ -38,8 +38,7 @@ Matriz4x4 matriz_escala(double sx, double sy, double sz) {
 	return matriz;
 }
 
-Matriz4x4 matriz_rotacao_x(double angulo_graus) {
-	double rad = graus_para_radianos(angulo_graus);
+Matriz4x4 matriz_rotacao_x(double rad){
 	double c = std::cos(rad);
 	double s = std::sin(rad);
 	Matriz4x4 matriz{};
@@ -50,8 +49,7 @@ Matriz4x4 matriz_rotacao_x(double angulo_graus) {
 	return matriz;
 }
 
-Matriz4x4 matriz_rotacao_y(double angulo_graus) {
-	double rad = graus_para_radianos(angulo_graus);
+Matriz4x4 matriz_rotacao_y(double rad){
 	double c = std::cos(rad);
 	double s = std::sin(rad);
 	Matriz4x4 matriz{};
@@ -62,8 +60,7 @@ Matriz4x4 matriz_rotacao_y(double angulo_graus) {
 	return matriz;
 }
 
-Matriz4x4 matriz_rotacao_z(double angulo_graus) {
-	double rad = graus_para_radianos(angulo_graus);
+Matriz4x4 matriz_rotacao_z(double rad){
 	double c = std::cos(rad);
 	double s = std::sin(rad);
 	Matriz4x4 matriz{};
