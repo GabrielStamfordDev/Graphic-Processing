@@ -69,40 +69,6 @@ class Camera:
         A direção do raio é então o vetor que liga a posição da câmera ao ponto
         calculado na tela, sendo normalizado antes do retorno.
         """
-
-        """
-Representação do mapeamento de pixels para o plano de projeção:
-
-        V (up)
-        ↑
-        │
-        │        (i,j)
-        │      ┌───────┐
-        │      │   •   │  ← centro do pixel (i+0.5, j+0.5)
-        │      │       │
-        │      └───────┘
-        │          ↑
-        │          │ Δy = (j+0.5)*pixel_size
-        │
-        └──────────────→ U (right)
-                   │
-                   │ Δx = (i+0.5)*pixel_size
-                   ↓
-
-   upper_left  ┌───────────────────────────┐
-               │  .   .   .   .   .   .    │
-               │                           │
-               │  .   .   •   .   .   .    │
-               │                           │
-               │  .   .   .   .   .   .    │
-               └───────────────────────────┘
-                        screen plane
-
-                ↘
-                  ↘   raio
-                    ↘
-                      C (câmera)
-"""
         deslocamento_x = self.U * ((i + 0.5) * self.pixel_size)
         deslocamento_y = self.V * ((j + 0.5) * self.pixel_size)
         
