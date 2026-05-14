@@ -25,8 +25,6 @@ from transformacoes import (
 
 from src.Ponto import Ponto
 
-EPSILON = 1e-6
-
 
 # ============================================================
 # INTERSEÇÃO
@@ -416,6 +414,16 @@ def processar_malha(
                 M_total = M_atual @ M_total
 
     # ========================================================
+    # POSIÇÃO INICIAL DO JSON
+    # ========================================================
+
+    M_inicial = matriz_translacao(
+        obj.relative_pos.x,
+        obj.relative_pos.y,
+        obj.relative_pos.z
+    )
+
+    # ========================================================
     # POSIÇÃO FINAL NO MUNDO
     # ========================================================
 
@@ -425,7 +433,7 @@ def processar_malha(
         relative_pos.z
     )
 
-    M_total = M_relative @ M_total
+    M_total = M_relative @ M_inicial @ M_total
 
     # ========================================================
     # APLICAÇÃO NOS VÉRTICES
@@ -602,8 +610,7 @@ def main():
                     ray_dir
                 )
 
-                if EPSILON < t < closest_t:
-
+                if t < closest_t:
                     closest_t = t
                     hit_color = obj.material.color
 

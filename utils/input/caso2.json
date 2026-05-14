@@ -1,56 +1,64 @@
 {
-  "globalLight": [0.3, 0.3, 0.3],
+  "globalLight": [0.1, 0.1, 0.1],
 
   "materials": {
-    "azul": {
-      "color": [0.0, 0.1, 1.0]
-    },
-    "vermelho": {
-      "color": [1.0, 0.0, 0.1]
-    },
     "chao": {
-      "color": [0.70, 0.5, 0.1]
+      "color": [0.2, 0.5, 0.8],
+      "ka": [0.2, 0.5, 0.8],
+      "ks": [0.0, 0.0, 0.0],
+      "ns": 10
+    },
+        "material1": {
+      "color": [0.5, 0.2, 0.8],
+      "ka": [0.2, 0.5, 0.8],
+      "ks": [0.0, 0.0, 0.0],
+      "ns": 10
+    },
+        "material2": {
+      "color": [0.2, 0.5, 0],
+      "ka": [0.2, 0.5, 0.8],
+      "ks": [0.0, 0.0, 0.0],
+      "ns": 10
     }
   },
 
   "camera": {
-    "lookfrom": [120, 120, -200],
-    "lookat": [68, 90, 0],
+    "lookfrom": [-2.34, 7.34, 56.87],
+    "lookat": [-1.30, 7.50, 29.35],
     "upVector": [0, 1, 0],
     "image_width": 600,
     "image_height": 600,
-    "screen_distance": 0.75
+    "screen_distance": 1.0
   },
-
-  "lights": [
-    {
-      "name": "Luz do Teto",
-      "position": [278, 548, -278],
-      "color": [1.0, 1.0, 1.0]
-    }
-  ],
 
   "objects": [
     {
-      "name": "Chão",
       "type": "plane",
       "point_on_plane": [0, 0, 0],
       "normal": [0, 1, 0],
       "material": "chao"
     },
     {
-      "name": "Esfera azul",
-      "type": "sphere",
-      "center": [0, 100, 0],
-      "radius": 90,
-      "material": "azul"
+      "type": "mesh",
+      "relativePos": [0.0000, 5.0000, 0.0000],
+      "material": "material1",
+      "path": "./utils/input/cubo.obj",
+      "transform": [
+          { "type": "scaling", "factors": [10, 10, 10] },
+          { "type": "rotation", "angle": [0, 0, 0] },
+          { "type": "translation", "vector": [0, 10, 0] }
+      ]
     },
     {
-      "name": "Esfera vermelha",
-      "type": "sphere",
-      "center": [100, 90, 0],
-      "radius": 50,
-      "material": "vermelho"
+      "type": "mesh",
+      "relativePos": [0.0000, 5.0000, 0.0000],
+      "material": "material2",
+      "path": "./utils/input/macaco.obj",
+      "transform": [
+          { "type": "scaling", "factors": [5, 5, 5] },
+          { "type": "rotation", "angle": [0, 0, 0] },
+          { "type": "translation", "vector": [0, 10, 0] }
+      ]
     }
   ]
 }
