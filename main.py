@@ -609,7 +609,7 @@ def main():
 
             for obj in scene_data.objects:
 
-                t = intersect_object(
+                t, normal = intersect_object(
                     obj,
                     cam.C,
                     ray_dir
@@ -617,6 +617,7 @@ def main():
 
                 if t < closest_t:
                     closest_t = t
+                    closest_normal = normal
                     hit_color = obj.material.color
 
             if hit_color is not None:
