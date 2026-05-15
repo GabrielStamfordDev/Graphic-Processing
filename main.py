@@ -1,7 +1,8 @@
 import sys
 import numpy as np
 from pathlib import Path
-
+from src.Ponto import Ponto
+from src.Vetor import Vetor
 from utils.Scene.sceneParser import SceneJsonLoader
 from utils.MeshReader.ObjReader import ObjReader
 
@@ -23,48 +24,57 @@ from transformacoes import (
     aplicar_matriz_vetor
 )
 
-from src.Ponto import Ponto
-
 
 # ============================================================
 # INTERSEÇÃO
 # ============================================================
 
 def intersect_object(obj, ray_origin, ray_dir):
-
+    """
+    Retorna a dupla (t, Normal). 
+    Se não bater em nada, retorna (inf, None).
+    """
     if obj.obj_type == "sphere":
-
-        return intersect_sphere(
-            ray_origin,
-            ray_dir,
-            obj.relative_pos,
-            obj.get_num("radius")
-        )
+        return intersect_sphere(ray_origin, ray_dir, obj.relative_pos, obj.get_num("radius"))
 
     elif obj.obj_type == "plane":
-
-        normal = obj.get_vetor(
-            "normal"
-        ).normalize()
-
-        return intersect_plane(
-            ray_origin,
-            ray_dir,
-            obj.relative_pos,
-            normal
-        )
+        normal = obj.get_vetor("normal").normalize()
+        return intersect_plane(ray_origin, ray_dir, obj.relative_pos, normal)
 
     elif obj.obj_type == "mesh":
-
-        return intersect_triangles_numpy(
-            ray_origin,
-            ray_dir,
-            obj.np_v0,
-            obj.np_v1,
-            obj.np_v2
+        # Recebe os novos retornos da função vetorizada do geometria.py
+        t, idx, u, v = intersect_triangles_numpy(
+            ray_origin, ray_dir, obj.np_v0, obj.np_v1, obj.np_v2
         )
+        
+        if t != float("inf"):
+            # 1. Busca as normais originais daquele triângulo específico
+            n0 = Vetor(*obj.np_n0[idx])
+            n1 = Vetor(*obj.np_n1[idx])
+            n2 = Vetor(*obj.np_n2[idx])
+            
+            # 2. Faz a Interpolação Baricêntrica para Phong Shading!
+            peso_n0 = 1.0 - u - v
+            normal_interp = (n0 * peso_n0) + (n1 * u) + (n2 * v)
+            
+            # 3. Retorna a distância e a normal recém normalizada
+            return t, normal_interp.normalize()
 
-    return float("inf")
+    return float("inf"), None
+
+
+def aplicar_matriz_normal(M, n: Vetor) -> Vetor:
+    """
+    Aplica a INVERSA TRANSPOSTA da matriz de transformação a um vetor normal,
+    garantindo que ele continue perpendicular à superfície mesmo após escalas não-uniformes.
+    """
+    M_inv = np.linalg.inv(M)
+    M_inv_T = M_inv.T
+    
+    v_homogeneo = np.array([n.x, n.y, n.z, 0.0], dtype=np.float64)
+    res = M_inv_T @ v_homogeneo
+    
+    return Vetor(res[0], res[1], res[2]).normalize()
 
 
 # ============================================================
@@ -289,8 +299,6 @@ def processar_malha(
     # ========================================================
     # IMPORTANTE:
     #
-    # relativePos do JSON é IGNORADO para mesh.
-    #
     # A malha sempre começa na origem.
     # ========================================================
 
@@ -435,73 +443,70 @@ def processar_malha(
 
     M_total = M_relative @ M_inicial @ M_total
 
-    # ========================================================
-    # APLICAÇÃO NOS VÉRTICES
+# ========================================================
+    # APLICAÇÃO NOS VÉRTICES E NORMAIS
     # ========================================================
 
-    v0_list = []
-    v1_list = []
-    v2_list = []
+    v0_list, v1_list, v2_list = [], [], []
+    n0_list, n1_list, n2_list = [], [], []
 
-    for face_pts in faces:
+    vertices_raw = mesh_reader.get_vertices()
+    normals_raw = mesh_reader.get_normals()
+    faces_data = mesh_reader.get_faces()
+
+    for face in faces_data:
+        # Pega os vértices originais
+        v0_raw = vertices_raw[face.vertice_indice[0]]
+        v1_raw = vertices_raw[face.vertice_indice[1]]
+        v2_raw = vertices_raw[face.vertice_indice[2]]
+
+        # Pega as normais originais (com fallback caso o OBJ não tenha normais)
+        if normals_raw:
+            n0_raw = normals_raw[face.normal_indice[0]]
+            n1_raw = normals_raw[face.normal_indice[1]]
+            n2_raw = normals_raw[face.normal_indice[2]]
+        else:
+            # Fallback: Cria uma normal de face padrão se o OBJ for muito simples
+            aresta1 = v1_raw - v0_raw
+            aresta2 = v2_raw - v0_raw
+            n_face = aresta1.cross(aresta2).normalize()
+            n0_raw = n1_raw = n2_raw = n_face
 
         if apply_transform:
-
-            v0t = aplicar_matriz_ponto(
-                M_total,
-                face_pts[0]
-            )
-
-            v1t = aplicar_matriz_ponto(
-                M_total,
-                face_pts[1]
-            )
-
-            v2t = aplicar_matriz_ponto(
-                M_total,
-                face_pts[2]
-            )
-
+            # Transforma Vértices
+            v0t = aplicar_matriz_ponto(M_total, v0_raw)
+            v1t = aplicar_matriz_ponto(M_total, v1_raw)
+            v2t = aplicar_matriz_ponto(M_total, v2_raw)
+            # Transforma Normais (Inversa Transposta)
+            n0t = aplicar_matriz_normal(M_total, n0_raw)
+            n1t = aplicar_matriz_normal(M_total, n1_raw)
+            n2t = aplicar_matriz_normal(M_total, n2_raw)
         else:
+            v0t, v1t, v2t = v0_raw, v1_raw, v2_raw
+            n0t, n1t, n2t = n0_raw, n1_raw, n2_raw
 
-            v0t = face_pts[0]
-            v1t = face_pts[1]
-            v2t = face_pts[2]
+        # Guarda Vértices
+        v0_list.append([v0t.x, v0t.y, v0t.z])
+        v1_list.append([v1t.x, v1t.y, v1t.z])
+        v2_list.append([v2t.x, v2t.y, v2t.z])
+        
+        # Guarda Normais
+        n0_list.append([n0t.x, n0t.y, n0t.z])
+        n1_list.append([n1t.x, n1t.y, n1t.z])
+        n2_list.append([n2t.x, n2t.y, n2t.z])
 
-        v0_list.append(
-            [v0t.x, v0t.y, v0t.z]
-        )
+    # Associa os arrays ao objeto
+    obj.np_v0 = np.array(v0_list, dtype=np.float64)
+    obj.np_v1 = np.array(v1_list, dtype=np.float64)
+    obj.np_v2 = np.array(v2_list, dtype=np.float64)
 
-        v1_list.append(
-            [v1t.x, v1t.y, v1t.z]
-        )
+    obj.np_n0 = np.array(n0_list, dtype=np.float64)
+    obj.np_n1 = np.array(n1_list, dtype=np.float64)
+    obj.np_n2 = np.array(n2_list, dtype=np.float64)
 
-        v2_list.append(
-            [v2t.x, v2t.y, v2t.z]
-        )
-
-    obj.np_v0 = np.array(
-        v0_list,
-        dtype=np.float64
-    )
-
-    obj.np_v1 = np.array(
-        v1_list,
-        dtype=np.float64
-    )
-
-    obj.np_v2 = np.array(
-        v2_list,
-        dtype=np.float64
-    )
-
-    print(
-        f"  → {len(faces)} triângulos.",
-        file=sys.stderr
-    )
+    print(f"  → {len(faces_data)} triângulos carregados e transformados.", file=sys.stderr)
 
     return True
-
 
 # ============================================================
 # MAIN
