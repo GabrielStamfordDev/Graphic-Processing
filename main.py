@@ -443,7 +443,7 @@ def processar_malha(
 
     M_total = M_relative @ M_inicial @ M_total
 
-# ========================================================
+    # ========================================================
     # APLICAÇÃO NOS VÉRTICES E NORMAIS
     # ========================================================
 
@@ -582,60 +582,104 @@ def main():
 
     scene_data.objects = valid_objects
 
-    # ========================================================
-    # RENDER
+# ========================================================
+    # RENDER (PHONG SHADING CORRIGIDO)
     # ========================================================
 
     print(f"P3\n{cam.hres} {cam.vres}\n255")
 
-    for j in range(cam.vres):
+    # Cor da luz ambiente global
+    Ia = scene_data.global_light.color
 
-        print(
-            f"Linha {j}/{cam.vres}",
-            file=sys.stderr,
-            end='\r'
-        )
+    for j in range(cam.vres):
+        print(f"Linha {j}/{cam.vres}", file=sys.stderr, end='\r')
 
         for i in range(cam.hres):
-
-            ray_dir = cam.get_ray_direction(
-                i,
-                j
-            )
+            ray_dir = cam.get_ray_direction(i, j)
 
             closest_t = float("inf")
+            hit_obj = None
+            hit_normal = None
 
-            hit_color = None
-
+            # 1. ENCONTRA O OBJETO MAIS PRÓXIMO
             for obj in scene_data.objects:
-
-                t, normal = intersect_object(
-                    obj,
-                    cam.C,
-                    ray_dir
-                )
-
+                t, normal = intersect_object(obj, cam.C, ray_dir)
+                
                 if t < closest_t:
                     closest_t = t
-                    closest_normal = normal
-                    hit_color = obj.material.color
+                    hit_obj = obj
+                    hit_normal = normal
 
-            if hit_color is not None:
+            # Se não bateu em nada, fundo preto
+            if hit_obj is None:
+                print("0 0 0")
+                continue
 
-                r = int(255.999 * hit_color.r)
-                g = int(255.999 * hit_color.g)
-                b = int(255.999 * hit_color.b)
+            # 2. PREPARATIVOS PARA A EQUAÇÃO DE PHONG
+            P = cam.C + (ray_dir * closest_t)
+            
+            N = hit_normal
+            # Garante que a normal aponta contra o raio
+            if ray_dir.dot(N) > 0:
+                N = N * (-1.0)
 
-            else:
+            V = (cam.C - P).normalize()
 
-                r, g, b = 0, 0, 0
+            mat = hit_obj.material
+            
+            # 3. COMPONENTE AMBIENTE (I = ka * Ia)
+            cor_r = mat.ka.r * Ia.r
+            cor_g = mat.ka.g * Ia.g
+            cor_b = mat.ka.b * Ia.b
 
-            print(f"{r} {g} {b}")
+            # 4. SOMA DAS LUZES PONTUAIS
+            for luz in scene_data.light_list:
+                vetor_luz = luz.pos - P
+                distancia_luz = vetor_luz.magnitude()
+                L = vetor_luz.normalize()
 
-    print(
-        "\nRenderização concluída!",
-        file=sys.stderr
-    )
+                # --- RAY TRACING DE SOMBRAS ---
+                # Epsilon (1e-4) para evitar que o objeto faça sombra nele mesmo
+                P_sombra = P + (N * 1e-4)
+                
+                em_sombra = False
+                for obj_sombra in scene_data.objects:
+                    # Não precisamos da normal para checar sombra, ignoramos com "_"
+                    t_sombra, _ = intersect_object(obj_sombra, P_sombra, L)
+                    
+                    if 0.001 < t_sombra < distancia_luz:
+                        em_sombra = True
+                        break
+                
+                if em_sombra:
+                    continue # Pula Difusa e Especular dessa luz
+
+                # --- LUZ DIFUSA ---
+                L_dot_N = L.dot(N)
+                if L_dot_N > 0:
+                    cor_r += mat.color.r * L_dot_N * luz.color.r
+                    cor_g += mat.color.g * L_dot_N * luz.color.g
+                    cor_b += mat.color.b * L_dot_N * luz.color.b
+
+                    # --- LUZ ESPECULAR ---
+                    R = (N * (2.0 * L_dot_N)) - L
+                    R_dot_V = R.dot(V)
+                    
+                    if R_dot_V > 0:
+                        spec = R_dot_V ** mat.ns
+                        cor_r += mat.ks.r * spec * luz.color.r
+                        cor_g += mat.ks.g * spec * luz.color.g
+                        cor_b += mat.ks.b * spec * luz.color.b
+
+            # 5. O SEGREDO QUE FALTAVA (Conversão e Clamping corretos!)
+            # Agora multiplicamos por 255.999 ANTES de converter para Inteiro.
+            r_final = min(255, max(0, int(255.999 * cor_r)))
+            g_final = min(255, max(0, int(255.999 * cor_g)))
+            b_final = min(255, max(0, int(255.999 * cor_b)))
+
+            print(f"{r_final} {g_final} {b_final}")
+
+    print("\nRenderização concluída!", file=sys.stderr)
 
 
 if __name__ == "__main__":
