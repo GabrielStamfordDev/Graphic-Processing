@@ -454,6 +454,35 @@ def processar_malha(
     normals_raw = mesh_reader.get_normals()
     faces_data = mesh_reader.get_faces()
 
+# ========================================================
+    # INTEGRAÇÃO DO MATERIAL (.MTL) vs (.JSON)
+    # ========================================================
+    
+    # REGRA: O .json é o chefe. Só puxamos o .mtl se o .json 
+    # NÃO tiver especificado um material (nome vazio).
+    if obj.material.name == "" and len(faces_data) > 0:
+        mat_mtl = faces_data[0].material
+        
+        # CHECAGEM DE SEGURANÇA: Só sobrescrevemos se o .mtl realmente
+        # tiver entregue uma cor (Kd) diferente de (0,0,0). Isso evita que
+        # um .mtl ausente ou quebrado destrua a renderização.
+        if mat_mtl.kd.x != 0.0 or mat_mtl.kd.y != 0.0 or mat_mtl.kd.z != 0.0:
+            
+            # Transferindo as cores originais do arquivo 3D
+            obj.material.color.r = mat_mtl.kd.x
+            obj.material.color.g = mat_mtl.kd.y
+            obj.material.color.b = mat_mtl.kd.z
+            
+            obj.material.ka.r = mat_mtl.ka.x
+            obj.material.ka.g = mat_mtl.ka.y
+            obj.material.ka.b = mat_mtl.ka.z
+            
+            obj.material.ks.r = mat_mtl.ks.x
+            obj.material.ks.g = mat_mtl.ks.y
+            obj.material.ks.b = mat_mtl.ks.z
+            
+            obj.material.ns = mat_mtl.ns
+
     for face in faces_data:
         # Pega os vértices originais
         v0_raw = vertices_raw[face.vertice_indice[0]]
