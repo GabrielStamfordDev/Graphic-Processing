@@ -18,9 +18,9 @@ def matriz_escala(sx: float, sy: float, sz: float) -> np.ndarray:
         [0.0, 0.0, 0.0, 1.0]
     ], dtype=np.float64)
 
-def matriz_rotacao_x(rad: float) -> np.ndarray:
+def matriz_rotacao_x(angulo_radianos: float) -> np.ndarray:
     # rad = np.radians(angulo_graus)
-    c, s = np.cos(rad), np.sin(rad)
+    c, s = np.cos(angulo_radianos), np.sin(angulo_radianos)
     return np.array([
         [1.0, 0.0,  0.0, 0.0],
         [0.0,   c,   -s, 0.0],
@@ -28,9 +28,9 @@ def matriz_rotacao_x(rad: float) -> np.ndarray:
         [0.0, 0.0,  0.0, 1.0]
     ], dtype=np.float64)
 
-def matriz_rotacao_y(rad: float) -> np.ndarray:
-    # rad = np.radians(angulo_graus)
-    c, s = np.cos(rad), np.sin(rad)
+def matriz_rotacao_y(angulo_radianos: float) -> np.ndarray:
+    #rad = np.radians(angulo_graus)
+    c, s = np.cos(angulo_radianos), np.sin(angulo_radianos)
     return np.array([
         [  c, 0.0,    s, 0.0],
         [0.0, 1.0,  0.0, 0.0],
@@ -38,9 +38,9 @@ def matriz_rotacao_y(rad: float) -> np.ndarray:
         [0.0, 0.0,  0.0, 1.0]
     ], dtype=np.float64)
 
-def matriz_rotacao_z(rad: float) -> np.ndarray:
-    # rad = np.radians(angulo_graus)
-    c, s = np.cos(rad), np.sin(rad)
+def matriz_rotacao_z(angulo_radianos: float) -> np.ndarray:
+    #rad = np.radians(angulo_graus)
+    c, s = np.cos(angulo_radianos), np.sin(angulo_radianos)
     return np.array([
         [  c,  -s,  0.0, 0.0],
         [  s,   c,  0.0, 0.0],

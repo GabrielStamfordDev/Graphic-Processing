@@ -1,7 +1,8 @@
 import sys
 import numpy as np
 from pathlib import Path
-
+from src.Ponto import Ponto
+from src.Vetor import Vetor
 from utils.Scene.sceneParser import SceneJsonLoader
 from utils.MeshReader.ObjReader import ObjReader
 
@@ -23,37 +24,56 @@ from transformacoes import (
     aplicar_matriz_vetor
 )
 
-from lighting import Hit
-
-from src.Ponto import Ponto
-from src.Vetor import Vetor
-
-from lighting import (
-    Hit,
-    Light,
-    AmbientLight,
-    phong_shading
-)
-
-EPSILON = 1e-6
-
 
 # ============================================================
 # INTERSEÇÃO
 # ============================================================
 def intersect_object(obj, ray_origin, ray_dir):
-
+    """
+    Retorna a dupla (t, Normal). 
+    Se não bater em nada, retorna (inf, None).
+    """
     if obj.obj_type == "sphere":
-        return intersect_sphere(ray_origin, ray_dir, obj.relative_pos, obj.get_num("radius")), -1
+        return intersect_sphere(ray_origin, ray_dir, obj.relative_pos, obj.get_num("radius"))
 
     elif obj.obj_type == "plane":
         normal = obj.get_vetor("normal").normalize()
-        return intersect_plane(ray_origin, ray_dir, obj.relative_pos, normal), -1
+        return intersect_plane(ray_origin, ray_dir, obj.relative_pos, normal)
 
     elif obj.obj_type == "mesh":
-        return intersect_triangles_numpy(ray_origin, ray_dir, obj.np_v0, obj.np_v1, obj.np_v2)
+        # Recebe os novos retornos da função vetorizada do geometria.py
+        t, idx, u, v = intersect_triangles_numpy(
+            ray_origin, ray_dir, obj.np_v0, obj.np_v1, obj.np_v2
+        )
+        
+        if t != float("inf"):
+            # 1. Busca as normais originais daquele triângulo específico
+            n0 = Vetor(*obj.np_n0[idx])
+            n1 = Vetor(*obj.np_n1[idx])
+            n2 = Vetor(*obj.np_n2[idx])
+            
+            # 2. Faz a Interpolação Baricêntrica para Phong Shading!
+            peso_n0 = 1.0 - u - v
+            normal_interp = (n0 * peso_n0) + (n1 * u) + (n2 * v)
+            
+            # 3. Retorna a distância e a normal recém normalizada
+            return t, normal_interp.normalize()
 
-    return float("inf"), -1
+    return float("inf"), None
+
+
+def aplicar_matriz_normal(M, n: Vetor) -> Vetor:
+    """
+    Aplica a INVERSA TRANSPOSTA da matriz de transformação a um vetor normal,
+    garantindo que ele continue perpendicular à superfície mesmo após escalas não-uniformes.
+    """
+    M_inv = np.linalg.inv(M)
+    M_inv_T = M_inv.T
+    
+    v_homogeneo = np.array([n.x, n.y, n.z, 0.0], dtype=np.float64)
+    res = M_inv_T @ v_homogeneo
+    
+    return Vetor(res[0], res[1], res[2]).normalize()
 
 
 # ============================================================
@@ -276,7 +296,9 @@ def processar_malha(
     M_total = np.eye(4, dtype=np.float64)
 
     # ========================================================
-    # POSITION ACUMULADA DAS TRANSLATIONS
+    # IMPORTANTE:
+    #
+    # A malha sempre começa na origem.
     # ========================================================
 
     relative_pos = Ponto(
@@ -421,72 +443,98 @@ def processar_malha(
     M_total = M_relative @ M_inicial @ M_total
 
     # ========================================================
-    # APLICAÇÃO NOS VÉRTICES
+    # APLICAÇÃO NOS VÉRTICES E NORMAIS
     # ========================================================
 
-    v0_list = []
-    v1_list = []
-    v2_list = []
+    v0_list, v1_list, v2_list = [], [], []
+    n0_list, n1_list, n2_list = [], [], []
 
-    for face_pts in faces:
+    vertices_raw = mesh_reader.get_vertices()
+    normals_raw = mesh_reader.get_normals()
+    faces_data = mesh_reader.get_faces()
+
+# ========================================================
+    # INTEGRAÇÃO DO MATERIAL (.MTL) vs (.JSON)
+    # ========================================================
+    
+    # REGRA: O .json é o chefe. Só puxamos o .mtl se o .json 
+    # NÃO tiver especificado um material (nome vazio).
+    if obj.material.name == "" and len(faces_data) > 0:
+        mat_mtl = faces_data[0].material
+        
+        # CHECAGEM DE SEGURANÇA: Só sobrescrevemos se o .mtl realmente
+        # tiver entregue uma cor (Kd) diferente de (0,0,0). Isso evita que
+        # um .mtl ausente ou quebrado destrua a renderização.
+        if mat_mtl.kd.x != 0.0 or mat_mtl.kd.y != 0.0 or mat_mtl.kd.z != 0.0:
+            
+            # Transferindo as cores originais do arquivo 3D
+            obj.material.color.r = mat_mtl.kd.x
+            obj.material.color.g = mat_mtl.kd.y
+            obj.material.color.b = mat_mtl.kd.z
+            
+            obj.material.ka.r = mat_mtl.ka.x
+            obj.material.ka.g = mat_mtl.ka.y
+            obj.material.ka.b = mat_mtl.ka.z
+            
+            obj.material.ks.r = mat_mtl.ks.x
+            obj.material.ks.g = mat_mtl.ks.y
+            obj.material.ks.b = mat_mtl.ks.z
+            
+            obj.material.ns = mat_mtl.ns
+
+    for face in faces_data:
+        # Pega os vértices originais
+        v0_raw = vertices_raw[face.vertice_indice[0]]
+        v1_raw = vertices_raw[face.vertice_indice[1]]
+        v2_raw = vertices_raw[face.vertice_indice[2]]
+
+        # Pega as normais originais (com fallback caso o OBJ não tenha normais)
+        if normals_raw:
+            n0_raw = normals_raw[face.normal_indice[0]]
+            n1_raw = normals_raw[face.normal_indice[1]]
+            n2_raw = normals_raw[face.normal_indice[2]]
+        else:
+            # Fallback: Cria uma normal de face padrão se o OBJ for muito simples
+            aresta1 = v1_raw - v0_raw
+            aresta2 = v2_raw - v0_raw
+            n_face = aresta1.cross(aresta2).normalize()
+            n0_raw = n1_raw = n2_raw = n_face
 
         if apply_transform:
-
-            v0t = aplicar_matriz_ponto(
-                M_total,
-                face_pts[0]
-            )
-
-            v1t = aplicar_matriz_ponto(
-                M_total,
-                face_pts[1]
-            )
-
-            v2t = aplicar_matriz_ponto(
-                M_total,
-                face_pts[2]
-            )
-
+            # Transforma Vértices
+            v0t = aplicar_matriz_ponto(M_total, v0_raw)
+            v1t = aplicar_matriz_ponto(M_total, v1_raw)
+            v2t = aplicar_matriz_ponto(M_total, v2_raw)
+            # Transforma Normais (Inversa Transposta)
+            n0t = aplicar_matriz_normal(M_total, n0_raw)
+            n1t = aplicar_matriz_normal(M_total, n1_raw)
+            n2t = aplicar_matriz_normal(M_total, n2_raw)
         else:
+            v0t, v1t, v2t = v0_raw, v1_raw, v2_raw
+            n0t, n1t, n2t = n0_raw, n1_raw, n2_raw
 
-            v0t = face_pts[0]
-            v1t = face_pts[1]
-            v2t = face_pts[2]
+        # Guarda Vértices
+        v0_list.append([v0t.x, v0t.y, v0t.z])
+        v1_list.append([v1t.x, v1t.y, v1t.z])
+        v2_list.append([v2t.x, v2t.y, v2t.z])
+        
+        # Guarda Normais
+        n0_list.append([n0t.x, n0t.y, n0t.z])
+        n1_list.append([n1t.x, n1t.y, n1t.z])
+        n2_list.append([n2t.x, n2t.y, n2t.z])
 
-        v0_list.append(
-            [v0t.x, v0t.y, v0t.z]
-        )
+    # Associa os arrays ao objeto
+    obj.np_v0 = np.array(v0_list, dtype=np.float64)
+    obj.np_v1 = np.array(v1_list, dtype=np.float64)
+    obj.np_v2 = np.array(v2_list, dtype=np.float64)
 
-        v1_list.append(
-            [v1t.x, v1t.y, v1t.z]
-        )
+    obj.np_n0 = np.array(n0_list, dtype=np.float64)
+    obj.np_n1 = np.array(n1_list, dtype=np.float64)
+    obj.np_n2 = np.array(n2_list, dtype=np.float64)
 
-        v2_list.append(
-            [v2t.x, v2t.y, v2t.z]
-        )
-
-    obj.np_v0 = np.array(
-        v0_list,
-        dtype=np.float64
-    )
-
-    obj.np_v1 = np.array(
-        v1_list,
-        dtype=np.float64
-    )
-
-    obj.np_v2 = np.array(
-        v2_list,
-        dtype=np.float64
-    )
-
-    print(
-        f"  → {len(faces)} triângulos.",
-        file=sys.stderr
-    )
+    print(f"  → {len(faces_data)} triângulos carregados e transformados.", file=sys.stderr)
 
     return True
-
 
 # ============================================================
 # MAIN
@@ -539,156 +587,105 @@ def main():
 
     scene_data.objects = valid_objects
 
-    # ========================================================
-    # LIGHTING SETUP
-    # ========================================================
-
-    ambient_light = AmbientLight(
-        scene_data.global_light.color
-    )
-
-    lights = []
-
-    for l in scene_data.light_list:
-
-        lights.append(
-            Light(
-                l.pos,
-                l.color
-            )
-        )
-
-    # ========================================================
-    # RENDER
+# ========================================================
+    # RENDER (PHONG SHADING CORRIGIDO)
     # ========================================================
 
     print(f"P3\n{cam.hres} {cam.vres}\n255")
 
-    for j in range(cam.vres):
+    # Cor da luz ambiente global
+    Ia = scene_data.global_light.color
 
-        print(
-            f"Linha {j}/{cam.vres}",
-            file=sys.stderr,
-            end='\r'
-        )
+    for j in range(cam.vres):
+        print(f"Linha {j}/{cam.vres}", file=sys.stderr, end='\r')
 
         for i in range(cam.hres):
-
-            ray_origin = cam.C
-
-            ray_dir = cam.get_ray_direction(
-                i,
-                j
-            )
+            ray_dir = cam.get_ray_direction(i, j)
 
             closest_t = float("inf")
+            hit_obj = None
+            hit_normal = None
 
-            hit = None
-
-            # ====================================================
-            # INTERSEÇÃO
-            # ====================================================
-
+            # 1. ENCONTRA O OBJETO MAIS PRÓXIMO
             for obj in scene_data.objects:
-
-                t, idx = intersect_object(
-                    obj,
-                    ray_origin,
-                    ray_dir
-                )
-
-                if EPSILON < t < closest_t:
-
+                t, normal = intersect_object(obj, cam.C, ray_dir)
+                
+                if t < closest_t:
                     closest_t = t
+                    hit_obj = obj
+                    hit_normal = normal
 
-                    hit_point = (
-                        ray_origin
-                        + ray_dir * t
-                    )
+            # Se não bateu em nada, fundo preto
+            if hit_obj is None:
+                print("0 0 0")
+                continue
 
-                    # ================================================
-                    # NORMAL
-                    # ================================================
+            # 2. PREPARATIVOS PARA A EQUAÇÃO DE PHONG
+            P = cam.C + (ray_dir * closest_t)
+            
+            N = hit_normal
+            # Garante que a normal aponta contra o raio
+            if ray_dir.dot(N) > 0:
+                N = N * (-1.0)
 
-                    if obj.obj_type == "sphere":
+            V = (cam.C - P).normalize()
 
-                        normal = (
-                            hit_point
-                            - obj.relative_pos
-                        ).normalize()
+            mat = hit_obj.material
+            
+            # 3. COMPONENTE AMBIENTE (I = ka * Ia)
+            cor_r = mat.ka.r * Ia.r
+            cor_g = mat.ka.g * Ia.g
+            cor_b = mat.ka.b * Ia.b
 
-                    elif obj.obj_type == "plane":
+            # 4. SOMA DAS LUZES PONTUAIS
+            for luz in scene_data.light_list:
+                vetor_luz = luz.pos - P
+                distancia_luz = vetor_luz.magnitude()
+                L = vetor_luz.normalize()
 
-                        normal = obj.get_vetor(
-                            "normal"
-                        ).normalize()
+                # --- RAY TRACING DE SOMBRAS ---
+                # Epsilon (1e-4) para evitar que o objeto faça sombra nele mesmo
+                P_sombra = P + (N * 1e-4)
+                
+                em_sombra = False
+                for obj_sombra in scene_data.objects:
+                    # Não precisamos da normal para checar sombra, ignoramos com "_"
+                    t_sombra, _ = intersect_object(obj_sombra, P_sombra, L)
+                    
+                    if 0.001 < t_sombra < distancia_luz:
+                        em_sombra = True
+                        break
+                
+                if em_sombra:
+                    continue # Pula Difusa e Especular dessa luz
 
-                    elif obj.obj_type == "mesh":
+                # --- LUZ DIFUSA ---
+                L_dot_N = L.dot(N)
+                if L_dot_N > 0:
+                    cor_r += mat.color.r * L_dot_N * luz.color.r
+                    cor_g += mat.color.g * L_dot_N * luz.color.g
+                    cor_b += mat.color.b * L_dot_N * luz.color.b
 
-                        v0 = Ponto(*obj.np_v0[idx])
+                    # --- LUZ ESPECULAR ---
+                    R = (N * (2.0 * L_dot_N)) - L
+                    R_dot_V = R.dot(V)
+                    
+                    if R_dot_V > 0:
+                        spec = R_dot_V ** mat.ns
+                        cor_r += mat.ks.r * spec * luz.color.r
+                        cor_g += mat.ks.g * spec * luz.color.g
+                        cor_b += mat.ks.b * spec * luz.color.b
 
-                        v1 = Ponto(*obj.np_v1[idx])
+            # 5. O SEGREDO QUE FALTAVA (Conversão e Clamping corretos!)
+            # Agora multiplicamos por 255.999 ANTES de converter para Inteiro.
+            r_final = min(255, max(0, int(255.999 * cor_r)))
+            g_final = min(255, max(0, int(255.999 * cor_g)))
+            b_final = min(255, max(0, int(255.999 * cor_b)))
 
-                        v2 = Ponto(*obj.np_v2[idx])
+            print(f"{r_final} {g_final} {b_final}")
 
-                        edge1 = v1 - v0
-
-                        edge2 = v2 - v0
-
-                        normal = (
-                            edge1
-                            .cross(edge2)
-                            .normalize()
-                        )
-
-                        # garante normal voltada pra câmera
-                        if normal.dot(ray_dir) > 0:
-
-                            normal = -normal
+    print("\nRenderização concluída!", file=sys.stderr)
 
 
-                    # ================================================
-                    # HIT
-                    # ================================================
-
-                    hit = Hit(
-                        point=hit_point,
-                        normal=normal,
-                        obj=obj,
-                        t=t,
-                        index=idx
-                    )
-
-            # ====================================================
-            # SHADING
-            # ====================================================
-
-            if hit is None:
-
-                r, g, b = 0, 0, 0
-
-            else:
-
-                color = phong_shading(
-                    hit,
-                    lights,
-                    ambient_light,
-                    cam.C,
-                    scene_data.objects,
-                    intersect_object
-                )
-
-                r = int(255.999 * color.x)
-
-                g = int(255.999 * color.y)
-
-                b = int(255.999 * color.z)
-
-            print(f"{r} {g} {b}")
-
-    print(
-        "\nRenderização concluída!",
-        file=sys.stderr
-    )
-if __name__ == "__main__": 
+if __name__ == "__main__":
     main()

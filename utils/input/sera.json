@@ -7,19 +7,33 @@
       "ka": [0.2, 0.5, 0.8],
       "ks": [0.0, 0.0, 0.0],
       "ns": 10
+<<<<<<< HEAD
     },
     "outro": {
+=======
+    } ,
+      "outro": {
+>>>>>>> 70b3dd78a8d4c621332007db1d0e0df1f47742ef
       "color": [0.5, 0.2, 0.8],
       "ka": [0.2, 0.5, 0.8],
       "ks": [0.0, 0.0, 0.0],
       "ns": 10
+<<<<<<< HEAD
     },
     "outro2": {
+=======
+     } ,
+      "outro2": {
+>>>>>>> 70b3dd78a8d4c621332007db1d0e0df1f47742ef
       "color": [0.5, 0.2, 0.0],
       "ka": [0.2, 0.5, 0.8],
       "ks": [0.0, 0.0, 0.0],
       "ns": 10
+<<<<<<< HEAD
     }
+=======
+     }
+>>>>>>> 70b3dd78a8d4c621332007db1d0e0df1f47742ef
   },
 
   "camera": {
@@ -40,9 +54,15 @@
     },
     {
       "type": "mesh",
+<<<<<<< HEAD
       "relativePos": [0.0, 5.0, 0.0],
       "path": "./utils/input/cubo.obj",
       "material": "outro",
+=======
+      "relativePos": [0.0000, 5.0000, 0.0000],
+      "path": "utils/input/cubo.obj",
+      "material" : "outro",
+>>>>>>> 70b3dd78a8d4c621332007db1d0e0df1f47742ef
       "transform": [
         { "type": "scaling", "factors": [2, 4, 8] },
         { "type": "rotation", "angle": [45, 45, 75] },
@@ -51,6 +71,7 @@
     },
     {
       "type": "mesh",
+<<<<<<< HEAD
       "relativePos": [0.0, 5.0, 0.0],
       "path": "./utils/input/macaco.obj",
       "material": "outro2",
@@ -62,3 +83,16 @@
     }
   ]
 }
+=======
+      "relativePos": [0.0000, 5.0000, 0.0000],
+      "path": "utils/input/macaco.obj",
+      "material": "outro2",
+      "transform": [
+          { "type": "scaling", "factors": [5, -5, 5] },
+          { "type": "rotation", "angle": [0, 120, 0] },
+          { "type": "translation", "vector": [0, 10, 0] }
+      ]
+    }
+  ]
+}
+>>>>>>> 70b3dd78a8d4c621332007db1d0e0df1f47742ef

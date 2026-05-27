@@ -22,19 +22,31 @@ def ensure_pillow():
 
 
 def resolve_scene():
-    scene = sys.argv[1] if len(sys.argv) > 1 else SCENE_DEFAULT
+    scene = None
+    use_cpp = False
+
+    for arg in sys.argv[1:]:
+        if arg == "--cpp":
+            use_cpp = True
+        elif not arg.startswith("--") and scene is None:
+            scene = arg
+
+    scene = scene or SCENE_DEFAULT
 
     if not os.path.exists(scene):
         print(f"Erro: cena não encontrada -> {scene}")
         sys.exit(1)
 
-    return scene
+    return scene, use_cpp
 
 
-def render(scene, output_ppm):
+def render(scene, output_ppm, use_cpp=False):
     print(f"Renderizando (com transformações) -> {output_ppm}")
 
-    cmd = [sys.executable, "main.py", scene]
+    if use_cpp:
+        cmd = ["main.exe", scene]
+    else:
+        cmd = [sys.executable, "main.py", scene]
 
     with open(output_ppm, "w") as f:
         subprocess.run(cmd, stdout=f, stderr=sys.stderr)
@@ -48,10 +60,10 @@ def convert(Image, input_ppm, output_png):
 
 def main():
     Image = ensure_pillow()
-    scene = resolve_scene()
+    scene, use_cpp = resolve_scene()
 
     # 🔷 SOMENTE AFTER
-    render(scene, OUTPUT["ppm"])
+    render(scene, OUTPUT["ppm"], use_cpp)
     convert(Image, OUTPUT["ppm"], OUTPUT["png"])
 
     print("\n✔ Processo concluído")
