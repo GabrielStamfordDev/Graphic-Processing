@@ -1,56 +1,85 @@
 {
-  "globalLight": [0.3, 0.3, 0.3],
-
-  "materials": {
-    "azul": {
-      "color": [0.0, 0.1, 1.0]
-    },
-    "vermelho": {
-      "color": [1.0, 0.0, 0.1]
-    },
-    "chao": {
-      "color": [0.70, 0.3, 0.1]
-    }
-  },
-
-  "camera": {
-    "lookfrom": [120, 120, -200],
-    "lookat": [68, 90, 0],
-    "vup": [1, 1, 0],
-    "image_width": 600,
-    "image_height": 600,
-    "screen_distance": 0.75
-  },
-
+  "globalLight": [0.1, 0.1, 0.1],
   "lights": [
     {
-      "name": "Luz do Teto",
-      "position": [278, 548, -278],
-      "color": [1.0, 1.0, 1.0]
+      "position": [20.0, 3.0, 20.0],
+      "color": [0.7, 0.0, 0.0],
+      "name": ""
+    },
+    {
+      "position": [20.0, 3.0, -20.0],
+      "color": [0.0, 0.7, 0.0],
+      "name": ""
+    },
+    {
+      "position": [-20.0, 3.0, 20.0],
+      "color": [0.0, 0.0, 0.7],
+      "name": ""
+    },
+    {
+      "position": [5.0, 10.0, 13.0],
+      "color": [0.9, 0.9, 0.9],
+      "name": ""
     }
   ],
+  "materials": {
+    "chao": {
+      "color": [0.2, 0.5, 0.8],
+      "ka": [0.2, 0.5, 0.8],
+      "ks": [0.0, 0.0, 0.0],
+      "ns": 10
+    },
+    "a": {
+      "color": [0.5, 0.2, 0.8],
+      "ka": [0.2, 0.5, 0.8],
+      "ks": [0.0, 0.0, 0.0],
+      "ns": 10
+    },
+    "b": {
+      "color": [0.5, 0.2, 0.0],
+      "ka": [0.2, 0.5, 0.8],
+      "ks": [0.0, 0.0, 0.0],
+      "ns": 10
+    }
+  },
+  "camera": {
+    "lookfrom": [21.6, 7.34, 22.19],
+    "lookat": [21.0, 7.42, 21.39],
+    "upVector": [0, 1, 0],
+    "image_width": 600,
+    "image_height": 600,
+    "screen_distance": 1.0
+  },
 
   "objects": [
     {
-      "name": "Chão",
       "type": "plane",
       "point_on_plane": [0, 0, 0],
       "normal": [0, 1, 0],
       "material": "chao"
     },
     {
-      "name": "Esfera azul",
-      "type": "sphere",
-      "center": [0, 100, 0],
-      "radius": 90,
-      "material": "azul"
+      "type": "mesh",
+      "relativePos": [0.0, 5.0, 0.0],
+      "path": "./utils/input/cubo.obj",
+      "material": "a",
+      "transform": [
+        { "type": "scaling", "factors": [10, 10, 10] },
+        { "type": "rotation", "angle": [0, 0, 0] },
+        { "type": "translation", "vector": [0, 10, -8] }
+      ]
     },
+
     {
-      "name": "Esfera vermelha",
-      "type": "sphere",
-      "center": [100, 90, -500],
-      "radius": 50,
-      "material": "vermelho"
+      "type": "mesh",
+      "relativePos": [0.0, 5.0, 0.0],
+      "path": "./utils/input/macaco.obj",
+      "material": "b",
+      "transform": [
+        { "type": "scaling", "factors": [5, 5, 5] },
+        { "type": "rotation", "angle": [0, 0, 1.57079632679] },
+        { "type": "translation", "vector": [0, 10, 0] }
+      ]
     }
   ]
 }
