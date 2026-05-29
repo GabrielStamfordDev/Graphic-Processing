@@ -1,217 +1,175 @@
+# src/iluminacao.py
+import numpy as np
 from src.Ponto import Ponto
 from src.Vetor import Vetor
 
 
 # ============================================================
-# LIGHT
+# CONSTANTES
 # ============================================================
-
-class Light:
-    """
-    Luz pontual da cena
-    """
-    def __init__(self, position, color):
-
-        self.pos = Ponto(
-                position.x,
-                position.y,
-                position.z
-            )
-
-        self.color = Vetor(
-                color.r,
-                color.g,
-                color.b
-            )
+EPSILON = 1e-4
 
 
 # ============================================================
-# AMBIENT LIGHT
+# SOMBRAS
 # ============================================================
-
-class AmbientLight:
-    def __init__(self, color):
-        self.color = Vetor(color.r, color.g, color.b)
-
-# ============================================================
-# HIT STRUCT
-# ============================================================
-class Hit:
-    def __init__(self, point: Ponto, normal: Vetor, obj, t: float, index: int = -1):
-        self.point = point
-        self.normal = normal
-        self.obj = obj
-        self.t = t
-        self.index = index
-
-    def __repr__(self):
-        return f"Hit(t={self.t:.4f}, obj={self.obj.obj_type})"
-    
-# ============================================================
-# SHADOW
-# ============================================================
-
-def is_in_shadow(
-    hit: Hit,
-    light: Light,
-    scene_objects: list,
-    intersect_fn
+def checar_sombra(
+    ponto_deslocado: Ponto,
+    L_normalizado: Vetor,
+    distancia_luz: float,
+    objetos: list,
+    intersect_func
 ) -> bool:
+    """
+    Dispara um shadow ray a partir de um ponto ligeiramente deslocado.
+    
+    Retorna True se existir qualquer objeto entre:
+        0 < t < distancia_luz
+    """
 
-    EPSILON = 1e-2
-
-    # direção até a luz
-    light_vec = light.pos - hit.point
-
-    light_distance = light_vec.magnitude()
-
-    light_dir = light_vec.normalize()
-
-    # evita acne
-    shadow_origin = (
-        hit.point
-        + hit.normal * EPSILON
-    )
-
-    for obj in scene_objects:
-
-        t, _ = intersect_fn(
-            obj,
-            shadow_origin,
-            light_dir
+    for obj_sombra in objetos:
+        t_sombra, _ = intersect_func(
+            obj_sombra,
+            ponto_deslocado,
+            L_normalizado
         )
 
-        if EPSILON < t < light_distance:
+        if EPSILON < t_sombra < distancia_luz:
             return True
 
     return False
 
 
 # ============================================================
-# PHONG SHADING
+# PHONG
 # ============================================================
+def calcular_cor_phong(
+    P: Ponto,
+    N: Vetor,
+    ray_dir: Vetor,
+    hit_obj,
+    scene_data,
+    intersect_func
+) -> tuple[float, float, float]:
 
-def phong_shading(
-    hit: Hit,
-    lights: list,
-    ambient_light: AmbientLight,
-    camera_pos: Ponto,
-    scene_objects: list,
-    intersect_fn
-) -> Vetor:
+    Ia = scene_data.global_light.color
+    mat = hit_obj.material
 
-    material = hit.obj.material
+    # =========================================================
+    # NORMALIZAÇÃO GLOBAL
+    # =========================================================
 
-    # ========================================================
-    # COEFICIENTES
-    # ========================================================
+    N = N.normalize()
+    ray_dir = ray_dir.normalize()
 
-    ka = Vetor(
-        material.ka.r,
-        material.ka.g,
-        material.ka.b
-    )
+    # Corrige normal para ficar contra o raio incidente
+    if ray_dir.dot(N) > 0:
+        N = N * (-1.0)
 
-    kd = Vetor(
-        material.color.r,
-        material.color.g,
-        material.color.b
-    )
+    # Vetor de visão
+    V = (scene_data.camera.lookfrom - P).normalize()
 
-    ks = Vetor(
-        material.ks.r,
-        material.ks.g,
-        material.ks.b
-    )
-
-    ns = material.ns
-
-    # ========================================================
+    # =========================================================
     # COMPONENTE AMBIENTE
-    # ========================================================
+    # =========================================================
 
-    ambient = Vetor(
-        ka.x * ambient_light.color.x,
-        ka.y * ambient_light.color.y,
-        ka.z * ambient_light.color.z
-    )
+    cor_r = mat.ka.r * Ia.r
+    cor_g = mat.ka.g * Ia.g
+    cor_b = mat.ka.b * Ia.b
 
-    color = ambient
-
-    # ========================================================
-    # DIREÇÃO DA CÂMERA
-    # ========================================================
-
-    V = (
-        camera_pos
-        - hit.point
-    ).normalize()
-
-    N = hit.normal.normalize()
-
-    # ========================================================
+    # =========================================================
     # LUZES
-    # ========================================================
+    # =========================================================
 
-    for light in lights:
+    for luz in scene_data.light_list:
 
-        # sombra
-        if is_in_shadow(
-            hit,
-            light,
-            scene_objects,
-            intersect_fn
+        vetor_luz = luz.pos - P
+
+        distancia_luz = vetor_luz.magnitude()
+
+        # Vetor unitário direção da luz
+        L = vetor_luz.normalize()
+
+        # =====================================================
+        # SHADOW RAY
+        # =====================================================
+
+        P_sombra = P + (N * EPSILON)
+
+        if checar_sombra(
+            P_sombra,
+            L,
+            distancia_luz,
+            scene_data.objects,
+            intersect_func
         ):
             continue
 
-        # direção até luz
-        L = (
-            light.pos
-            - hit.point
-        ).normalize()
+        # =====================================================
+        # DIFUSA
+        # =====================================================
 
-        # ====================================================
-        # DIFUSO
-        # ====================================================
+        L_dot_N = N.dot(L)
 
-        N_dot_L = max(
-            0.0,
-            N.dot(L)
+        if L_dot_N <= 0:
+            continue
+
+        cor_r += (
+            mat.color.r *
+            L_dot_N *
+            luz.color.r
         )
 
-        diffuse = Vetor(
-            kd.x * light.color.x * N_dot_L,
-            kd.y * light.color.y * N_dot_L,
-            kd.z * light.color.z * N_dot_L
+        cor_g += (
+            mat.color.g *
+            L_dot_N *
+            luz.color.g
         )
 
-        # ====================================================
+        cor_b += (
+            mat.color.b *
+            L_dot_N *
+            luz.color.b
+        )
+
+        # =====================================================
         # ESPECULAR
-        # ====================================================
+        # =====================================================
 
-        R = (
-            N * (2.0 * N.dot(L))
-            - L
-        ).normalize()
+        # R = 2(N·L)N - L
 
-        R_dot_V = max(
-            0.0,
-            R.dot(V)
-        )
+        R = ((N * (2.0 * L_dot_N)) - L).normalize()
 
-        spec_factor = R_dot_V ** ns
+        R_dot_V = R.dot(V)
 
-        specular = Vetor(
-            ks.x * light.color.x * spec_factor,
-            ks.y * light.color.y * spec_factor,
-            ks.z * light.color.z * spec_factor
-        )
+        if R_dot_V > 0:
 
-        # acumula
-        color = (
-            color
-            + diffuse
-            + specular
-        )
+            spec = R_dot_V ** mat.ns
 
-    return color.clamp(0.0, 1.0)
+            cor_r += (
+                mat.ks.r *
+                spec *
+                luz.color.r
+            )
+
+            cor_g += (
+                mat.ks.g *
+                spec *
+                luz.color.g
+            )
+
+            cor_b += (
+                mat.ks.b *
+                spec *
+                luz.color.b
+            )
+
+    # =========================================================
+    # CLAMP
+    # =========================================================
+
+    cor_r = min(1.0, max(0.0, cor_r))
+    cor_g = min(1.0, max(0.0, cor_g))
+    cor_b = min(1.0, max(0.0, cor_b))
+
+    return cor_r, cor_g, cor_b

@@ -1,687 +1,250 @@
 import sys
 import numpy as np
 from pathlib import Path
-
+from src.Ponto import Ponto
+from src.Vetor import Vetor
 from utils.Scene.sceneParser import SceneJsonLoader
 from utils.MeshReader.ObjReader import ObjReader
 
 from camera import Camera
-
-from geometria import (
-    intersect_sphere,
-    intersect_plane,
-    intersect_triangles_numpy
-)
-
+from geometria import intersect_sphere, intersect_plane, intersect_triangles_numpy
 from transformacoes import (
     matriz_translacao,
     matriz_escala,
+    aplicar_matriz_ponto,
+    aplicar_matriz_vetor,
     matriz_rotacao_x,
     matriz_rotacao_y,
-    matriz_rotacao_z,
-    aplicar_matriz_ponto,
-    aplicar_matriz_vetor
+    matriz_rotacao_z
 )
-
-from src.Ponto import Ponto
-
-from lighting import Light, AmbientLight, Hit, phong_shading
-
-EPSILON = 1e-6
-
+# IMPORTAÇÃO DA SUA NOVA BIBLIOTECA DE ILUMINAÇÃO
+from lighting import calcular_cor_phong 
 
 # ============================================================
-# INTERSEÇÃO
+# INTERSEÇÃO DE OBJETOS (O seu motor geométrico)
 # ============================================================
 
 def intersect_object(obj, ray_origin, ray_dir):
-
+    """Retorna a dupla (t, Normal). Se não bater em nada, retorna (inf, None)."""
     if obj.obj_type == "sphere":
-
-        return intersect_sphere(
-            ray_origin,
-            ray_dir,
-            obj.relative_pos,
-            obj.get_num("radius")
-        )
+        return intersect_sphere(ray_origin, ray_dir, obj.relative_pos, obj.get_num("radius"))
 
     elif obj.obj_type == "plane":
-
-        normal = obj.get_vetor(
-            "normal"
-        ).normalize()
-
-        return intersect_plane(
-            ray_origin,
-            ray_dir,
-            obj.relative_pos,
-            normal
-        )
+        normal = obj.get_vetor("normal").normalize()
+        return intersect_plane(ray_origin, ray_dir, obj.relative_pos, normal)
 
     elif obj.obj_type == "mesh":
+        t, idx, u, v = intersect_triangles_numpy(ray_origin, ray_dir, obj.np_v0, obj.np_v1, obj.np_v2)
+        if t != float("inf"):
+            n0, n1, n2 = Vetor(*obj.np_n0[idx]), Vetor(*obj.np_n1[idx]), Vetor(*obj.np_n2[idx])
+            
+            # Aqui acontece o Phong Shading (Interpolação Baricêntrica das Normais)
+            peso_n0 = 1.0 - u - v
+            normal_interp = (n0 * peso_n0) + (n1 * u) + (n2 * v)
+            return t, normal_interp.normalize()
 
-        return intersect_triangles_numpy(
-            ray_origin,
-            ray_dir,
-            obj.np_v0,
-            obj.np_v1,
-            obj.np_v2
-        )
-
-    return float("inf")
+    return float("inf"), None
 
 
-# ============================================================
-# MATRIZ DE ROTAÇÃO
-# ============================================================
+def aplicar_matriz_normal(M, n: Vetor) -> Vetor:
+    """Aplica a INVERSA TRANSPOSTA da matriz de transformação a um vetor normal."""
+    M_inv = np.linalg.inv(M)
+    v_homogeneo = np.array([n.x, n.y, n.z, 0.0], dtype=np.float64)
+    res = M_inv.T @ v_homogeneo
+    return Vetor(res[0], res[1], res[2]).normalize()
+
 
 def build_rotation_matrix(rx, ry, rz):
-
-    Mx = matriz_rotacao_x(rx)
-    My = matriz_rotacao_y(ry)
-    Mz = matriz_rotacao_z(rz)
-
-    return Mz @ My @ Mx
-
+    return matriz_rotacao_z(rz) @ matriz_rotacao_y(ry) @ matriz_rotacao_x(rx)
 
 # ============================================================
-# ESFERA
+# PRÉ-PROCESSAMENTO DE OBJETOS
 # ============================================================
 
 def processar_esfera(obj, apply_transform):
-    """
-    ESFERA
-
-    - rotação: ignorada
-    - escala: multiplica raio
-    - translação: aplicada no centro
-    """
-
-    if not apply_transform:
-        return
-
+    if not apply_transform: return
     centro = obj.relative_pos
-
     raio = obj.get_num("radius")
 
     for t in obj.transforms:
-
-        if t.t_type == "rotation":
-            pass
-
-        elif t.t_type == "scaling":
-
-            sx = t.data.x
-            sy = t.data.y
-            sz = t.data.z
-
-            if not (
-                np.isclose(sx, sy)
-                and np.isclose(sx, sz)
-            ):
-                raise ValueError(
-                    "Esfera aceita apenas escala uniforme."
-                )
-
-            raio *= sx
-
+        if t.t_type == "scaling":
+            if not (np.isclose(t.data.x, t.data.y) and np.isclose(t.data.x, t.data.z)):
+                raise ValueError("Esfera aceita apenas escala uniforme.")
+            raio *= t.data.x
         elif t.t_type == "translation":
-
-            M = matriz_translacao(
-                t.data.x,
-                t.data.y,
-                t.data.z
-            )
-
-            centro = aplicar_matriz_ponto(
-                M,
-                centro
-            )
+            centro = aplicar_matriz_ponto(matriz_translacao(t.data.x, t.data.y, t.data.z), centro)
 
     obj.relative_pos = centro
     obj.numeric_data["radius"] = raio
 
 
-# ============================================================
-# PLANO
-# ============================================================
-
 def processar_plano(obj, apply_transform):
-    """
-    PLANO
-
-    - rotação: aplicada na normal
-    - escala: ignorada
-    - translação: aplicada no relative_pos
-    """
-
-    if not apply_transform:
-        return
-
+    if not apply_transform: return
     ponto = obj.relative_pos
-
-    normal = obj.get_vetor(
-        "normal"
-    ).normalize()
+    normal = obj.get_vetor("normal").normalize()
 
     for t in obj.transforms:
-
         if t.t_type == "rotation":
-
-            M_rot = build_rotation_matrix(
-                t.data.x,
-                t.data.y,
-                t.data.z
-            )
-
-            normal = aplicar_matriz_vetor(
-                M_rot,
-                normal
-            ).normalize()
-
-        elif t.t_type == "scaling":
-            pass
-
+            M_rot = build_rotation_matrix(t.data.x, t.data.y, t.data.z)
+            normal = aplicar_matriz_vetor(M_rot, normal).normalize()
         elif t.t_type == "translation":
-
-            M = matriz_translacao(
-                t.data.x,
-                t.data.y,
-                t.data.z
-            )
-
-            ponto = aplicar_matriz_ponto(
-                M,
-                ponto
-            )
+            ponto = aplicar_matriz_ponto(matriz_translacao(t.data.x, t.data.y, t.data.z), ponto)
 
     obj.relative_pos = ponto
-
     obj.vetor_point_data["normal"] = normal
 
 
-# ============================================================
-# MALHA
-# ============================================================
-
-def processar_malha(
-    obj,
-    apply_transform,
-    loaded_meshes
-):
-    """
-    MALHA
-
-    REGRAS:
-
-    --------------------------------------------------------
-    relativePos do JSON:
-        usado apenas como posição inicial
-
-    --------------------------------------------------------
-    translation:
-        afeta relative_pos
-
-    --------------------------------------------------------
-    rotation/scaling:
-        afetam vértices
-
-        se relative_pos != origem:
-            usa relative_pos como pivô
-
-    --------------------------------------------------------
-    final:
-        aplica:
-            translation acumulada
-            +
-            posição inicial do JSON
-    """
-
+def processar_malha(obj, apply_transform, loaded_meshes):
     obj_path = obj.get_property("path")
-
-    # ========================================================
-    # OBJ inexistente
-    # ========================================================
-
     if not Path(obj_path).exists():
-
-        print(
-            f"[AVISO] OBJ não encontrado: {obj_path}",
-            file=sys.stderr
-        )
-
+        print(f"[AVISO] OBJ não encontrado: {obj_path}", file=sys.stderr)
         return False
-
-    # ========================================================
-    # CACHE
-    # ========================================================
 
     if obj_path not in loaded_meshes:
-
-        print(
-            f"Carregando: {obj_path}",
-            file=sys.stderr
-        )
-
-        loaded_meshes[obj_path] = ObjReader(
-            obj_path
-        )
+        print(f"Carregando: {obj_path}", file=sys.stderr)
+        loaded_meshes[obj_path] = ObjReader(obj_path)
 
     mesh_reader = loaded_meshes[obj_path]
-
-    faces = mesh_reader.get_face_points()
-
-    # ========================================================
-    # OBJ inválido
-    # ========================================================
-
-    if not faces:
-
-        print(
-            f"[AVISO] OBJ vazio: {obj_path}",
-            file=sys.stderr
-        )
-
+    faces_data = mesh_reader.get_faces()
+    if not faces_data:
+        print(f"[AVISO] OBJ vazio: {obj_path}", file=sys.stderr)
         return False
 
-    # ========================================================
-    # MATRIZ FINAL
-    # ========================================================
-
     M_total = np.eye(4, dtype=np.float64)
-
-    # ========================================================
-    # POSITION ACUMULADA DAS TRANSLATIONS
-    # ========================================================
-
-    relative_pos = Ponto(
-        0.0,
-        0.0,
-        0.0
-    )
-
-    # ========================================================
-    # TRANSFORMAÇÕES
-    # ========================================================
+    relative_pos = Ponto(0.0, 0.0, 0.0)
 
     if apply_transform:
-
         for t in obj.transforms:
-
-            # ------------------------------------------------
-            # TRANSLAÇÃO
-            # ------------------------------------------------
-
             if t.t_type == "translation":
-
-                M_translate = matriz_translacao(
-                    t.data.x,
-                    t.data.y,
-                    t.data.z
-                )
-
-                relative_pos = aplicar_matriz_ponto(
-                    M_translate,
-                    relative_pos
-                )
-
-            # ------------------------------------------------
-            # ROTAÇÃO
-            # ------------------------------------------------
-
+                relative_pos = aplicar_matriz_ponto(matriz_translacao(t.data.x, t.data.y, t.data.z), relative_pos)
             elif t.t_type == "rotation":
-
-                M_rot = build_rotation_matrix(
-                    t.data.x,
-                    t.data.y,
-                    t.data.z
-                )
-
-                # pivô na origem
-                if (
-                    np.isclose(relative_pos.x, 0.0)
-                    and np.isclose(relative_pos.y, 0.0)
-                    and np.isclose(relative_pos.z, 0.0)
-                ):
-
+                M_rot = build_rotation_matrix(t.data.x, t.data.y, t.data.z)
+                if np.isclose(relative_pos.x, 0.0) and np.isclose(relative_pos.y, 0.0) and np.isclose(relative_pos.z, 0.0):
                     M_atual = M_rot
-
-                # pivô no relative_pos
                 else:
-
-                    T_neg = matriz_translacao(
-                        -relative_pos.x,
-                        -relative_pos.y,
-                        -relative_pos.z
-                    )
-
-                    T_pos = matriz_translacao(
-                        relative_pos.x,
-                        relative_pos.y,
-                        relative_pos.z
-                    )
-
-                    M_atual = (
-                        T_pos
-                        @ M_rot
-                        @ T_neg
-                    )
-
+                    T_neg = matriz_translacao(-relative_pos.x, -relative_pos.y, -relative_pos.z)
+                    T_pos = matriz_translacao(relative_pos.x, relative_pos.y, relative_pos.z)
+                    M_atual = T_pos @ M_rot @ T_neg
                 M_total = M_atual @ M_total
-
-            # ------------------------------------------------
-            # ESCALA
-            # ------------------------------------------------
-
             elif t.t_type == "scaling":
-
-                M_scale = matriz_escala(
-                    t.data.x,
-                    t.data.y,
-                    t.data.z
-                )
-
-                # pivô na origem
-                if (
-                    np.isclose(relative_pos.x, 0.0)
-                    and np.isclose(relative_pos.y, 0.0)
-                    and np.isclose(relative_pos.z, 0.0)
-                ):
-
+                M_scale = matriz_escala(t.data.x, t.data.y, t.data.z)
+                if np.isclose(relative_pos.x, 0.0) and np.isclose(relative_pos.y, 0.0) and np.isclose(relative_pos.z, 0.0):
                     M_atual = M_scale
-
-                # pivô no relative_pos
                 else:
-
-                    T_neg = matriz_translacao(
-                        -relative_pos.x,
-                        -relative_pos.y,
-                        -relative_pos.z
-                    )
-
-                    T_pos = matriz_translacao(
-                        relative_pos.x,
-                        relative_pos.y,
-                        relative_pos.z
-                    )
-
-                    M_atual = (
-                        T_pos
-                        @ M_scale
-                        @ T_neg
-                    )
-
+                    T_neg = matriz_translacao(-relative_pos.x, -relative_pos.y, -relative_pos.z)
+                    T_pos = matriz_translacao(relative_pos.x, relative_pos.y, relative_pos.z)
+                    M_atual = T_pos @ M_scale @ T_neg
                 M_total = M_atual @ M_total
 
-    # ========================================================
-    # POSIÇÃO INICIAL DO JSON
-    # ========================================================
+    M_total = matriz_translacao(relative_pos.x, relative_pos.y, relative_pos.z) @ matriz_translacao(obj.relative_pos.x, obj.relative_pos.y, obj.relative_pos.z) @ M_total
 
-    M_inicial = matriz_translacao(
-        obj.relative_pos.x,
-        obj.relative_pos.y,
-        obj.relative_pos.z
-    )
+    v0_list, v1_list, v2_list = [], [], []
+    n0_list, n1_list, n2_list = [], [], []
+    vertices_raw = mesh_reader.get_vertices()
+    normals_raw = mesh_reader.get_normals()
 
-    # ========================================================
-    # POSIÇÃO FINAL NO MUNDO
-    # ========================================================
+    if obj.material.name == "" and len(faces_data) > 0:
+        mat_mtl = faces_data[0].material
+        if mat_mtl.kd.x != 0.0 or mat_mtl.kd.y != 0.0 or mat_mtl.kd.z != 0.0:
+            obj.material.color.r, obj.material.color.g, obj.material.color.b = mat_mtl.kd.x, mat_mtl.kd.y, mat_mtl.kd.z
+            obj.material.ka.r, obj.material.ka.g, obj.material.ka.b = mat_mtl.ka.x, mat_mtl.ka.y, mat_mtl.ka.z
+            obj.material.ks.r, obj.material.ks.g, obj.material.ks.b = mat_mtl.ks.x, mat_mtl.ks.y, mat_mtl.ks.z
+            obj.material.ns = mat_mtl.ns
 
-    M_relative = matriz_translacao(
-        relative_pos.x,
-        relative_pos.y,
-        relative_pos.z
-    )
-
-    M_total = M_relative @ M_inicial @ M_total
-
-    # ========================================================
-    # APLICAÇÃO NOS VÉRTICES
-    # ========================================================
-
-    v0_list = []
-    v1_list = []
-    v2_list = []
-
-    for face_pts in faces:
+    for face in faces_data:
+        v0_raw, v1_raw, v2_raw = vertices_raw[face.vertice_indice[0]], vertices_raw[face.vertice_indice[1]], vertices_raw[face.vertice_indice[2]]
+        if normals_raw:
+            n0_raw, n1_raw, n2_raw = normals_raw[face.normal_indice[0]], normals_raw[face.normal_indice[1]], normals_raw[face.normal_indice[2]]
+        else:
+            n_face = (v1_raw - v0_raw).cross(v2_raw - v0_raw).normalize()
+            n0_raw = n1_raw = n2_raw = n_face
 
         if apply_transform:
-
-            v0t = aplicar_matriz_ponto(
-                M_total,
-                face_pts[0]
-            )
-
-            v1t = aplicar_matriz_ponto(
-                M_total,
-                face_pts[1]
-            )
-
-            v2t = aplicar_matriz_ponto(
-                M_total,
-                face_pts[2]
-            )
-
+            v0t, v1t, v2t = aplicar_matriz_ponto(M_total, v0_raw), aplicar_matriz_ponto(M_total, v1_raw), aplicar_matriz_ponto(M_total, v2_raw)
+            n0t, n1t, n2t = aplicar_matriz_normal(M_total, n0_raw), aplicar_matriz_normal(M_total, n1_raw), aplicar_matriz_normal(M_total, n2_raw)
         else:
+            v0t, v1t, v2t = v0_raw, v1_raw, v2_raw
+            n0t, n1t, n2t = n0_raw, n1_raw, n2_raw
 
-            v0t = face_pts[0]
-            v1t = face_pts[1]
-            v2t = face_pts[2]
+        v0_list.append([v0t.x, v0t.y, v0t.z])
+        v1_list.append([v1t.x, v1t.y, v1t.z])
+        v2_list.append([v2t.x, v2t.y, v2t.z])
+        n0_list.append([n0t.x, n0t.y, n0t.z])
+        n1_list.append([n1t.x, n1t.y, n1t.z])
+        n2_list.append([n2t.x, n2t.y, n2t.z])
 
-        v0_list.append(
-            [v0t.x, v0t.y, v0t.z]
-        )
-
-        v1_list.append(
-            [v1t.x, v1t.y, v1t.z]
-        )
-
-        v2_list.append(
-            [v2t.x, v2t.y, v2t.z]
-        )
-
-    obj.np_v0 = np.array(
-        v0_list,
-        dtype=np.float64
-    )
-
-    obj.np_v1 = np.array(
-        v1_list,
-        dtype=np.float64
-    )
-
-    obj.np_v2 = np.array(
-        v2_list,
-        dtype=np.float64
-    )
-
-    print(
-        f"  → {len(faces)} triângulos.",
-        file=sys.stderr
-    )
-
+    obj.np_v0, obj.np_v1, obj.np_v2 = np.array(v0_list, dtype=np.float64), np.array(v1_list, dtype=np.float64), np.array(v2_list, dtype=np.float64)
+    obj.np_n0, obj.np_n1, obj.np_n2 = np.array(n0_list, dtype=np.float64), np.array(n1_list, dtype=np.float64), np.array(n2_list, dtype=np.float64)
+    print(f"  → {len(faces_data)} triângulos carregados e transformados.", file=sys.stderr)
     return True
 
-
 # ============================================================
-# MAIN
+# MAIN LOOP DE RENDERIZAÇÃO
 # ============================================================
 
 def main():
-
     if len(sys.argv) < 2:
-
-        print(
-            "Use: python main.py <cena.json> [--no-transform]",
-            file=sys.stderr
-        )
-
+        print("Use: python main.py <cena.json> [--no-transform]", file=sys.stderr)
         sys.exit(1)
 
     scene_file = sys.argv[1]
+    apply_transform = not (len(sys.argv) > 2 and sys.argv[2] == "--no-transform")
 
-    apply_transform = True
-
-    if (
-        len(sys.argv) > 2
-        and sys.argv[2] == "--no-transform"
-    ):
-        apply_transform = False
-
-    # ========================================================
-    # LOAD DA CENA
-    # ========================================================
-
-    scene_data = SceneJsonLoader.load_file(
-        scene_file
-    )
-
+    scene_data = SceneJsonLoader.load_file(scene_file)
     cam = Camera(scene_data.camera)
 
-    # ========================================================
-    # PRÉ-PROCESSAMENTO
-    # ========================================================
-
     loaded_meshes = {}
-
     valid_objects = []
-
     for obj in scene_data.objects:
-
         if obj.obj_type == "sphere":
-
-            processar_esfera(
-                obj,
-                apply_transform
-            )
-
+            processar_esfera(obj, apply_transform)
         elif obj.obj_type == "plane":
-
-            processar_plano(
-                obj,
-                apply_transform
-            )
-
+            processar_plano(obj, apply_transform)
         elif obj.obj_type == "mesh":
-
-            ok = processar_malha(
-                obj,
-                apply_transform,
-                loaded_meshes
-            )
-
-            if not ok:
+            if not processar_malha(obj, apply_transform, loaded_meshes):
                 continue
-
         valid_objects.append(obj)
-
     scene_data.objects = valid_objects
-
-    # ========================================================
-    # RENDER
-    # ========================================================
 
     print(f"P3\n{cam.hres} {cam.vres}\n255")
 
     for j in range(cam.vres):
-
-        print(
-            f"Linha {j}/{cam.vres}",
-            file=sys.stderr,
-            end='\r'
-        )
+        print(f"Linha {j}/{cam.vres}", file=sys.stderr, end='\r')
 
         for i in range(cam.hres):
-
             ray_dir = cam.get_ray_direction(i, j)
 
             closest_t = float("inf")
             hit_obj = None
-
-            # ====================================================
-            # INTERSEÇÃO
-            # ====================================================
+            hit_normal = None
 
             for obj in scene_data.objects:
-
-                t = intersect_object(
-                    obj,
-                    cam.C,
-                    ray_dir
-                )
-
-                if EPSILON < t < closest_t:
+                t, normal = intersect_object(obj, cam.C, ray_dir)
+                if t < closest_t:
                     closest_t = t
                     hit_obj = obj
+                    hit_normal = normal
 
-            # ====================================================
-            # SHADING
-            # ====================================================
+            if hit_obj is None:
+                print("0 0 0")
+                continue
 
-            if hit_obj is not None:
+            # Ponto de impacto P real
+            P = cam.C + (ray_dir * closest_t)
 
-                hit_point = cam.C + ray_dir * closest_t
+            # CHAMADA COMPACTA PASSANDO O INTERSECT_OBJECT COMO CALLBACK
+            # Aqui dentro a biblioteca calcula a cor final de Phong e resolve as sombras perfeitamente.
+            cor_r, cor_g, cor_b = calcular_cor_phong(
+                P, hit_normal, ray_dir, hit_obj, scene_data, intersect_object
+            )
 
-                # -----------------------------
-                # NORMAL
-                # -----------------------------
+            r_final = min(255, max(0, int(255.999 * cor_r)))
+            g_final = min(255, max(0, int(255.999 * cor_g)))
+            b_final = min(255, max(0, int(255.999 * cor_b)))
 
-                if hit_obj.obj_type == "sphere":
+            print(f"{r_final} {g_final} {b_final}")
 
-                    hit_normal = hit_point - hit_obj.relative_pos
-
-                elif hit_obj.obj_type == "plane":
-
-                    hit_normal = hit_obj.get_vetor("normal").normalize()
-
-                elif hit_obj.obj_type == "mesh":
-
-                    # flat shading (correto agora)
-                    # precisa de vertices da face → pegar do ObjReader
-                    v0, v1, v2 = hit_obj.np_v0[0], hit_obj.np_v1[0], hit_obj.np_v2[0]
-
-                    hit_normal = np.cross(v1 - v0, v2 - v0)
-
-                # normalização segura
-                norm = np.linalg.norm(hit_normal)
-                if norm > 1e-8:
-                    hit_normal = hit_normal / norm
-
-                # -----------------------------
-                # HIT STRUCT
-                # -----------------------------
-
-                hit = Hit(hit_point, hit_normal, hit_obj)
-
-                # -----------------------------
-                # PHONG
-                # -----------------------------
-
-                color = phong_shading(
-                    hit,
-                    scene_data.light_list,
-                    scene_data.global_light,
-                    cam.C,
-                    scene_data.objects,
-                    intersect_object
-                )
-
-                color = np.clip(color, 0, 1)
-
-                r = int(255.999 * color[0])
-                g = int(255.999 * color[1])
-                b = int(255.999 * color[2])
-
-            else:
-
-                r, g, b = 0, 0, 0
-
-            print(f"{r} {g} {b}")
-
-    print(
-        "\nRenderização concluída!",
-        file=sys.stderr
-    )
+    print("\nRenderização concluída!", file=sys.stderr)
 
 
 if __name__ == "__main__":

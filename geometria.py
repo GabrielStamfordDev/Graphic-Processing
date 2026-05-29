@@ -6,10 +6,6 @@ def intersect_sphere(origem: Ponto, direcao: Vetor, centro: Ponto, raio: float) 
     """
     Retorna a distância t e o Vetor Normal no ponto de interseção.
     """
-    origem = garantir_ponto(origem)
-    direcao = garantir_vetor(direcao)
-    centro = garantir_ponto(centro)
-
     v = origem - centro
     v_dot_d = v.dot(direcao)
     v_dot_v = v.dot(v)
@@ -45,14 +41,8 @@ def intersect_plane(origem: Ponto, direcao: Vetor, p0: Ponto, normal: Vetor) -> 
     """
     Retorna a distância t e a Normal do plano.
     """
-    origem = garantir_ponto(origem)
-    direcao = garantir_vetor(direcao)
-    p0 = garantir_ponto(p0)
-    normal = garantir_vetor(normal)
-
     denom = direcao.dot(normal)
     
-    # Agora denom é garantidamente um float, abs() funcionará
     if abs(denom) > 1e-6:
         p0_origem = p0 - origem
         t = p0_origem.dot(normal) / denom
@@ -64,14 +54,13 @@ def intersect_plane(origem: Ponto, direcao: Vetor, p0: Ponto, normal: Vetor) -> 
             
     return float('inf'), None
 
+
 def intersect_triangles_numpy(origem: Ponto, direcao: Vetor,
                            v0: np.ndarray, v1: np.ndarray, v2: np.ndarray) -> tuple[float, int, float, float]:
     """
     Retorna (t, indice_do_triangulo, u, v)
     """
-
     EPSILON = 1e-8
-
     orig = np.array([origem.x, origem.y, origem.z])
     dire = np.array([direcao.x, direcao.y, direcao.z])
 
@@ -82,7 +71,6 @@ def intersect_triangles_numpy(origem: Ponto, direcao: Vetor,
     a = np.einsum('ij,ij->i', aresta1, h)
 
     mask = np.abs(a) > EPSILON
-
     f = np.where(mask, 1.0 / np.where(mask, a, 1), 0)
 
     s = orig - v0
