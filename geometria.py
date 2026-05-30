@@ -49,8 +49,8 @@ def intersect_plane(origem: Ponto, direcao: Vetor, p0: Ponto, normal: Vetor) -> 
         
         if t > 0.001:
             # Se o raio atingir o plano por "trás", invertemos a normal para a luz funcionar
-            n_final = normal if denom < 0 else normal * (-1)
-            return t, n_final
+            # n_final = normal if denom < 0 else normal * (-1)
+            return t, normal
             
     return float('inf'), None
 
@@ -59,6 +59,7 @@ def intersect_triangles_numpy(origem: Ponto, direcao: Vetor,
                            v0: np.ndarray, v1: np.ndarray, v2: np.ndarray) -> tuple[float, int, float, float]:
     """
     Retorna (t, indice_do_triangulo, u, v)
+    Möller–Trumbore intersection algorithm + Regra de Cramer
     """
     EPSILON = 1e-8
     orig = np.array([origem.x, origem.y, origem.z])

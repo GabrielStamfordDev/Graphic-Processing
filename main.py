@@ -24,6 +24,7 @@ from transformacoes import (
     aplicar_matriz_vetor
 )
 
+from lighting import calcular_cor_phong
 
 # ============================================================
 # INTERSEÇÃO
@@ -494,12 +495,12 @@ def processar_malha(
             n0_raw = normals_raw[face.normal_indice[0]]
             n1_raw = normals_raw[face.normal_indice[1]]
             n2_raw = normals_raw[face.normal_indice[2]]
-        else:
+        '''else:
             # Fallback: Cria uma normal de face padrão se o OBJ for muito simples
             aresta1 = v1_raw - v0_raw
             aresta2 = v2_raw - v0_raw
             n_face = aresta1.cross(aresta2).normalize()
-            n0_raw = n1_raw = n2_raw = n_face
+            n0_raw = n1_raw = n2_raw = n_face'''
 
         if apply_transform:
             # Transforma Vértices
@@ -507,6 +508,9 @@ def processar_malha(
             v1t = aplicar_matriz_ponto(M_total, v1_raw)
             v2t = aplicar_matriz_ponto(M_total, v2_raw)
             # Transforma Normais (Inversa Transposta)
+            #n0t = n0_raw
+            #n1t = n1_raw
+            #n2t = n2_raw
             n0t = aplicar_matriz_normal(M_total, n0_raw)
             n1t = aplicar_matriz_normal(M_total, n1_raw)
             n2t = aplicar_matriz_normal(M_total, n2_raw)
@@ -647,10 +651,26 @@ def main():
             # 2. PREPARATIVOS PARA A EQUAÇÃO DE PHONG
             P = cam.C + (ray_dir * closest_t)
             
-            N = hit_normal
+            cor_r, cor_g, cor_b = calcular_cor_phong(
+                P,
+                hit_normal,
+                ray_dir,
+                hit_obj,
+                scene_data,
+                intersect_object
+            )
+
+            r_final = int(255.999 * cor_r)
+            g_final = int(255.999 * cor_g)
+            b_final = int(255.999 * cor_b)
+
+            print(f"{r_final} {g_final} {b_final}")
+
+    print("\nRenderização concluída!", file=sys.stderr)
+"""            N = hit_normal
             # Garante que a normal aponta contra o raio
-            if ray_dir.dot(N) > 0:
-                N = N * (-1.0)
+            '''if ray_dir.dot(N) > 0:
+                N = N * (-1.0)'''
 
             V = (cam.C - P).normalize()
 
@@ -709,7 +729,7 @@ def main():
             print(f"{r_final} {g_final} {b_final}")
 
     print("\nRenderização concluída!", file=sys.stderr)
-
+"""
 
 if __name__ == "__main__":
     main()
