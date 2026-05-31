@@ -14,6 +14,11 @@
 #include "transformacoes.cpp"
 #include "utils/scene/sceneParser.cpp"
 #include "utils/MeshReader/ObjReader.cpp"
+#include "Camera.h"
+#include "geometry.cpp"
+#include "transformacoes.cpp"
+#include "utils/scene/sceneParser.cpp"
+#include "utils/MeshReader/ObjReader.cpp"
 using namespace std;
 using hit_color = array<double, 3>;
 
