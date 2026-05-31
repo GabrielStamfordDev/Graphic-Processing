@@ -181,7 +181,7 @@ int main(int argc, char** argv){
     for(int j = 0; j < cam.vres; j ++){
         cerr<<"Linha "<<j<<'/'<<cam.vres<<'\r'<<flush;
         for(int i = 0; i < cam.hres; i++){
-            ray_dir = cam.getRayDirection(cam.hres - 1 - i, j);
+            ray_dir = cam.getRayDirection(i, j);
             closest_t = numeric_limits<double>::infinity();
             cor_valida = false;
             for(const auto& objeto : scene.objects){
