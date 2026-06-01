@@ -1,4 +1,5 @@
-#pragma once
+#ifndef OBJREADERHEADER
+#define OBJREADERHEADER
 
 /*
 Classe leitora de arquivos .obj. Onde o arquivo contém os vários pontos, normais e faces do objeto. No projeto 
@@ -116,9 +117,6 @@ public:
         return facePoints;
     }
 
-    std::vector<FaceData> getFaces() {
-        return faces;
-    }
     /*
     Retorna uma lista com um struct faces do objeto. Cada face contém:
         - Índices dos pontos
@@ -187,3 +185,5 @@ public:
 
     string getFilename() { return Filename; }
 };
+
+#endif

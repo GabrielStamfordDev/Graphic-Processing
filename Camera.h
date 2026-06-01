@@ -1,7 +1,7 @@
 #pragma once
-#include "../utils/Scene/sceneSchema.hpp"
-#include "../src/Ponto.h"
-#include "../src/Vetor.h"
+#include "utils/Scene/sceneSchema.hpp"
+#include "src/Ponto.h"
+#include "src/Vetor.h"
 
 class Camera {
 public:
