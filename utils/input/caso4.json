@@ -1,56 +1,71 @@
 {
-  "globalLight": [0.3, 0.3, 0.3],
-
+  "globalLight": [0.1, 0.1, 0.1],
+"lights": [
+    {
+      "position": [20.0, 3.0, 20.0],
+      "color": [0.7, 0.0, 0.0],
+      "name": ""
+    },
+    {
+      "position": [20.0, 3.0, -20.0],
+      "color": [0.0, 0.7, 0.0],
+      "name": ""
+    },
+    {
+      "position": [-20.0, 3.0, 20.0],
+      "color": [0.0, 0.0, 0.7],
+      "name": ""
+    },
+    {
+      "position": [5.0, 10.0, 13.0],
+      "color": [0.075, 0.075, 0.075],
+      "name": ""
+    }
+  ],
   "materials": {
-    "azul": {
-      "color": [0.0, 0.1, 1.0]
-    },
-    "vermelho": {
-      "color": [1.0, 0.0, 0.1]
-    },
     "chao": {
-      "color": [0.30, 0.1, 0.5]
+      "color": [0.2, 0.5, 0.8],
+      "ka": [0.2, 0.5, 0.8],
+      "ks": [0.0, 0.0, 0.0],
+      "ns": 10
     }
   },
 
   "camera": {
-    "lookfrom": [120, 90, 120],
-    "lookat": [90, 90, 90],
-    "vup": [-1, 1, 0],
+    "lookfrom": [13.69, 7.34, 35.54],
+    "lookat": [13.31, 7.59, 34.65],
+    "upVector": [0, 1, 0],
     "image_width": 600,
     "image_height": 600,
-    "screen_distance": 0.75
+    "screen_distance": 1.0
   },
-
-  "lights": [
-    {
-      "name": "Luz do Teto",
-      "position": [278, 548, -278],
-      "color": [1.0, 1.0, 1.0]
-    }
-  ],
 
   "objects": [
     {
-      "name": "Chão",
       "type": "plane",
       "point_on_plane": [0, 0, 0],
       "normal": [0, 1, 0],
       "material": "chao"
     },
     {
-      "name": "Esfera azul",
-      "type": "sphere",
-      "center": [0, 100, 0],
-      "radius": 90,
-      "material": "azul"
+      "type": "mesh",
+      "relativePos": [0.0000, 5.0000, 0.0000],
+      "path": "./utils/input/cubo.obj",
+      "transform": [
+        { "type": "scaling", "factors": [2, 4, 8] },
+        { "type": "rotation", "angle": [45, 45, 75] },
+        { "type": "translation", "vector": [0, 25, 0] }
+      ]
     },
     {
-      "name": "Esfera vermelha",
-      "type": "sphere",
-      "center": [119.8, 90, 119.8],
-      "radius": 0.1,
-      "material": "vermelho"
+      "type": "mesh",
+      "relativePos": [0.0000, 5.0000, 0.0000],
+      "path": "./utils/input/macaco.obj",
+      "transform": [
+          { "type": "scaling", "factors": [5, -5, 5] },
+          { "type": "rotation", "angle": [0, 0, 120] },
+          { "type": "translation", "vector": [0, 10, 0] }
+      ]
     }
   ]
 }

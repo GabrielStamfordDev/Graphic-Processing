@@ -1,0 +1,76 @@
+{
+  "camera": {
+    "lookfrom": [10.0, 6.0, 15.0],
+    "lookat": [0.0, 0.0, 0.0],
+    "upVector": [0.0, 1.0, 0.0],
+    "image_width": 500,
+    "image_height": 500,
+    "screen_distance": 1.0
+  },
+
+  "globalLight": [0.01, 0.01, 0.01],
+
+  "lights": [],
+
+  "materials": {
+    "ground": {
+      "name": "ground",
+      "color": [0.3, 0.8, 0.4]
+    },
+    "sphere1": {
+      "name": "sphere1",
+      "color": [0.8, 0.2, 0.2]
+    },
+    "sphere2": {
+      "name": "sphere2",
+      "color": [0.2, 0.2, 0.9]
+    },
+    "monkey": {
+      "name": "monkey",
+      "color": [0.8, 0.8, 0.8]
+    }
+  },
+
+  "objects": [
+    {
+      "type": "plane",
+      "relativePos": [0.0, -5.0, 0.0],
+      "normal": [0.0, 1.0, 0.0],
+      "material": "ground",
+      "transform": [
+        { "type": "rotation", "angle": [0, 0, 25] },
+        { "type": "translation", "vector": [0, 1.5, 0] }
+      ]
+    },
+
+    {
+      "type": "sphere",
+      "relativePos": [-3.0, 0.0, 2.0],
+      "radius": 1.0,
+      "material": "sphere1",
+      "transform": [{ "type": "translation", "vector": [4, 1, 0] }]
+    },
+
+    {
+      "type": "sphere",
+      "relativePos": [2.0, -2.0, -2.0],
+      "radius": 1.0,
+      "material": "sphere2",
+      "transform": [
+        { "type": "scaling", "factors": [2, 1, 1] },
+        { "type": "translation", "vector": [0, 2, 0] }
+      ]
+    },
+
+    {
+      "type": "mesh",
+      "material": "monkey",
+      "path": "utils/input/monkey.obj",
+      "transform": [
+        { "type": "scaling", "factors": [1.2, 1.2, 1.2] },
+        { "type": "rotation", "angle": [0, 45, 0] },
+        { "type": "translation", "vector": [0, -3, 3] }
+      ]
+    }
+  ]
+}
