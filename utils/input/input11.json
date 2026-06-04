@@ -1,0 +1,50 @@
+{
+  "camera": {
+    "lookfrom": [8, 6, 10],
+    "lookat": [0, 0, 0],
+    "upVector": [0, 1, 0],
+    "image_width": 500,
+    "image_height": 500,
+    "screen_distance": 0.75
+  },
+
+  "globalLight": [0.1, 0.1, 0.1],
+
+  "lights": [
+    {
+      "position": [10, 10, 10],
+      "color": [1, 1, 1],
+      "name": ""
+    }
+  ],
+
+  "materials": {
+    "green": {
+      "name": "green",
+      "color": [0, 1, 0],
+      "ks": [0, 0, 0],
+      "ka": [0, 1, 0],
+      "kr": [0, 0, 0],
+      "kt": [0, 0, 0],
+      "ns": 1,
+      "ni": 1,
+      "d": 1
+    }
+  },
+
+  "objects": [
+    {
+      "type": "plane",
+      "relativePos": [0, 0, 0],
+      "material": "green",
+      "normal": [0, 1, 0],
+
+      "transform": [
+        {
+          "type": "scaling",
+          "factors": [100, 100, 100]
+        }
+      ]
+    }
+  ]
+}

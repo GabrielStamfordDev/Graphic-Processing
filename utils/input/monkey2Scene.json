@@ -1,0 +1,144 @@
+{
+  "camera": {
+    "lookfrom": [10.0, 5.0, 15.0],
+    "lookat": [9.4655, 4.7327, 14.1982],
+    "upVector": [-0.1482, 0.9636, -0.2224],
+    "image_width": 500,
+    "image_height": 500,
+    "screen_distance": 0.75
+  },
+  "globalLight": [0.01, 0.01, 0.01],
+  "lights": [
+    {
+      "position": [20.0, 3.0, 20.0],
+      "color": [0.7, 0.0, 0.0],
+      "name": ""
+    },
+    {
+      "position": [20.0, 3.0, -20.0],
+      "color": [0.0, 0.7, 0.0],
+      "name": ""
+    },
+    {
+      "position": [-20.0, 3.0, 20.0],
+      "color": [0.0, 0.0, 0.7],
+      "name": ""
+    },
+    {
+      "position": [5.0, 10.0, 13.0],
+      "color": [0.075, 0.075, 0.075],
+      "name": ""
+    }
+  ],
+  "materials": {
+    "material0": {
+      "name": "material0",
+      "color": [0.3, 0.8, 0.4],
+      "ks": [0.0, 0.0, 0.0],
+      "ka": [0.3, 0.8, 0.4],
+      "kr": [0.0, 0.0, 0.0],
+      "kt": [0.0, 0.0, 0.0],
+      "ns": 4.0,
+      "ni": 1.0,
+      "d": 1.0
+    },
+    "material1": {
+      "name": "material1",
+      "color": [0.8008, 0.0, 0.0058],
+      "ks": [0.5, 0.5, 0.5],
+      "ka": [1.0, 1.0, 1.0],
+      "kr": [0.0, 0.0, 0.0],
+      "kt": [0.0, 0.0, 0.0],
+      "ns": 250.0,
+      "ni": 1.45,
+      "d": 1.0
+    },
+    "material2": {
+      "name": "material2",
+      "color": [0.0, 0.8008, 0.0058],
+      "ks": [0.5, 0.5, 0.5],
+      "ka": [1.0, 1.0, 1.0],
+      "kr": [0.05, 0.05, 0.05],
+      "kt": [0.7174, 0.7174, 0.7174],
+      "ns": 250.0,
+      "ni": 1.045,
+      "d": 0.25
+    },
+    "material3": {
+      "name": "material3",
+      "color": [0.1, 0.2, 0.9],
+      "ks": [0.0, 0.0, 0.0],
+      "ka": [0.05, 0.1, 0.45],
+      "kr": [0.0, 0.0, 0.0],
+      "kt": [0.0, 0.0, 0.0],
+      "ns": 4.0,
+      "ni": 1.0,
+      "d": 1.0
+    },
+    "material4": {
+      "name": "material4",
+      "color": [0.4, 0.8, 0.6],
+      "ks": [0.0, 0.0, 0.0],
+      "ka": [0.2, 0.4, 0.3],
+      "kr": [0.0, 0.0, 0.0],
+      "kt": [0.0, 0.0, 0.0],
+      "ns": 4.0,
+      "ni": 1.0,
+      "d": 1.0
+    },
+    "material5": {
+      "name": "material5",
+      "color": [0.0, 0.8008, 0.0058],
+      "ks": [0.5, 0.5, 0.5],
+      "ka": [1.0, 1.0, 1.0],
+      "kr": [0.0, 0.0, 0.0],
+      "kt": [0.0, 0.0, 0.0],
+      "ns": 250.0,
+      "ni": 1.45,
+      "d": 1.0
+    }
+  },
+
+  "objects": [
+    {
+      "type": "plane",
+      "relativePos": [0.0, -7.0, 0.0],
+      "material": "material0",
+      "normal": [0.0, 1.0, 0.0],
+      "transform": [
+        { "type": "rotation", "angle": [0, 0, 30] },
+        { "type": "translation", "vector": [0, 2, 0] }
+      ]
+    },
+
+    {
+      "type": "mesh",
+      "material": "material5",
+      "path": "utils/input/monkey.obj",
+      "transform": [
+        { "type": "scaling", "factors": [1.2, 1.2, 1.2] },
+        { "type": "rotation", "angle": [0, 45, 0] },
+        { "type": "translation", "vector": [2, -5, 2] }
+      ]
+    },
+
+    {
+      "type": "sphere",
+      "relativePos": [-3.0, 2.0, 3.0],
+      "material": "material3",
+      "radius": 0.75,
+      "transform": [{ "type": "translation", "vector": [4, 0, 0] }]
+    },
+
+    {
+      "type": "sphere",
+      "relativePos": [-2.5, -5.0, -3.55],
+      "material": "material4",
+      "radius": 1.0,
+      "transform": [
+        { "type": "scaling", "factors": [2, 1, 1] },
+        { "type": "translation", "vector": [0, 3, 0] }
+      ]
+    }
+  ]
+}
