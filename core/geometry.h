@@ -16,6 +16,29 @@ namespace{
     constexpr double kMinT = 0.001;
 }
 
+bool intersect_aabb(const Ponto& ray_origin, const Vetor& ray_dir, const Ponto& aabb_min, const Ponto& aabb_max) {
+    // Calcula a intersecção com os planos X (Direita e Esquerda)
+    double tx1 = (aabb_min.getX() - ray_origin.getX()) / ray_dir.getX();
+    double tx2 = (aabb_max.getX() - ray_origin.getX()) / ray_dir.getX();
+    double tmin = std::min(tx1, tx2);
+    double tmax = std::max(tx1, tx2);
+
+    // Calcula a intersecção com os planos Y (Cima e Baixo)
+    double ty1 = (aabb_min.getY() - ray_origin.getY()) / ray_dir.getY();
+    double ty2 = (aabb_max.getY() - ray_origin.getY()) / ray_dir.getY();
+    tmin = std::max(tmin, std::min(ty1, ty2));
+    tmax = std::min(tmax, std::max(ty1, ty2));
+
+    // Calcula a intersecção com os planos Z (Frente e Trás)
+    double tz1 = (aabb_min.getZ() - ray_origin.getZ()) / ray_dir.getZ();
+    double tz2 = (aabb_max.getZ() - ray_origin.getZ()) / ray_dir.getZ();
+    tmin = std::max(tmin, std::min(tz1, tz2));
+    tmax = std::min(tmax, std::max(tz1, tz2));
+
+    // Se o raio entra antes de sair (tmax >= tmin) E a saída está na frente da câmera (tmax > 0), acertou a caixa!
+    return tmax >= tmin && tmax > 0.0;
+}
+
 std::pair<double, Vetor> intersect_sphere(const Ponto& origem, const Vetor& direcao, const Ponto& centro, double raio){
 	Vetor v = origem - centro;
 	double v_dot_d = v.dot(direcao);
@@ -107,6 +130,14 @@ HitResult intersect_object(const ObjectData& obj, const Ponto& ray_origin, const
     }
 
     if(obj.objType == "mesh"){
+
+		if (obj.has_aabb) {
+			// Se o raio ERRAR a caixa invisível, ignora a malha inteira e volta infinito!
+			if (!intersect_aabb(ray_origin, ray_dir, obj.aabb_min, obj.aabb_max)) {
+				return {infinity(), Vetor()}; 
+			}
+		}
+		
         double closest_t = infinity();
         int      hit_idx   = -1;
         double   hit_u = 0.0, hit_v = 0.0;
@@ -114,7 +145,7 @@ HitResult intersect_object(const ObjectData& obj, const Ponto& ray_origin, const
             auto [t, u, v] = intersect_triangle_uvt(
                 ray_origin, ray_dir,
                 obj.mesh_v0[i], obj.mesh_v1[i], obj.mesh_v2[i]);
-            if(t < closest_t){
+            if(t > 1e-4 && t < closest_t){
                 closest_t = t;
                 hit_idx   = (int)i;
                 hit_u     = u;

@@ -74,6 +74,10 @@ struct ObjectData {
     vector<Vetor> mesh_n1;
     vector<Vetor> mesh_n2;
 
+    bool has_aabb = false;
+    Ponto aabb_min;
+    Ponto aabb_max;
+
     double  getNum     (string key){ return numericData[key]; }
     int64_t getInt     (string key){ return (int64_t)numericData[key]; }
     Vetor   getVetor   (string key){ return vetorPointData[key]; }

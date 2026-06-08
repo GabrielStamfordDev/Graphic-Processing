@@ -26,33 +26,35 @@ std::array<double, 3> calcular_cor_phong(
     const Vetor& N_in,
     const Vetor& ray_dir,
     const ObjectData& hit_obj,
-    const SceneData& scene_data,
+    const ColorData& cor_global,
+    const Ponto& LookFrom_atual,
+    const std::vector<LightData>& LightList,
+    const std::vector<ObjectData>& valid_objects,
     const std::function<HitResult(const ObjectData&, const Ponto&, const Vetor&)>& intersect_func
 ) {
-    auto Ia = scene_data.globalLight.color;
+    auto Ia = cor_global;
     auto mat = hit_obj.material;
-    Vetor N = N_in;
+    Vetor N = N_in.normalize();
     N = N.normalize();
 
-    Vetor V = (scene_data.camera.lookfrom - P).normalize();
+    Vetor V = (LookFrom_atual - P).normalize();
 
     double cor_r = mat.ka.r * Ia.r;
     double cor_g = mat.ka.g * Ia.g;
     double cor_b = mat.ka.b * Ia.b;
 
-    for (const auto& luz : scene_data.lightList) {
+    for (const auto& luz : LightList) {
         Vetor vetor_luz = luz.pos - P;
         double distancia_luz = vetor_luz.magnitude();
         Vetor L = vetor_luz.normalize();
 
-        Ponto P_sombra = P + (N * EPSILON);
-
-        if (checar_sombra(P_sombra, L, distancia_luz, scene_data.objects, intersect_func)) {
+        double L_dot_N = N.dot(L);
+        if (L_dot_N <= 0.0) {
             continue;
         }
 
-        double L_dot_N = N.dot(L);
-        if (L_dot_N <= 0.0) {
+        Ponto P_sombra = P + (N * EPSILON);
+        if (checar_sombra(P_sombra, L, distancia_luz, valid_objects, intersect_func)) {
             continue;
         }
 

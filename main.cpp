@@ -20,7 +20,7 @@ int main(int argc, char** argv){
     if(argc > 2 && string(argv[2]) == "--no-transform") transformar = false;
 
     CenaProcessada dados = prepararObjetos(scene.objects, transformar);
-
-    RayTracer(dados, cam, scene);
+    cout<<"P3\n"<<cam.hres<<' '<<cam.vres<<"\n255\n";
+    Trace(dados, cam, scene);
     return 0;
 }

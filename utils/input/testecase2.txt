@@ -1,0 +1,44 @@
+{
+  "globalLight": [0.2, 0.2, 0.2],
+
+  "camera": {
+    "lookfrom": [10.0, 5.0, 15.0],
+    "lookat": [0.0, 0.0, 0.0],
+    "upVector": [0.0, 1.0, 0.0],
+    "image_width": 700,
+    "image_height": 700,
+    "screen_distance": 0.75
+  },
+
+  "lights": [],
+
+  "materials": {
+    "mat_plano": {
+      "color": [0.3, 0.8, 0.4],
+      "ka": [0.3, 0.8, 0.4],
+      "ks": [0.0, 0.0, 0.0],
+      "ns": 10
+    },
+    "mat_esfera": {
+      "color": [1.0, 0.0, 0.0],
+      "ka": [1.0, 0.0, 0.0],
+      "ks": [0.0, 0.0, 0.0],
+      "ns": 10
+    }
+  },
+
+  "objects": [
+    {
+      "type": "plane",
+      "point_on_plane": [0.0, -7.0, 0.0],
+      "normal": [0.0, 1.0, 0.0],
+      "material": "mat_plano"
+    },
+    {
+      "type": "sphere",
+      "center": [0.0, 0.0, 0.0],
+      "radius": 2.0,
+      "material": "mat_esfera"
+    }
+  ]
+}

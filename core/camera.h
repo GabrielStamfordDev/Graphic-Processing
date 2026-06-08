@@ -12,7 +12,7 @@ public:
         d(cam.screen_distance), hres(cam.image_width), vres(cam.image_height)
     { build(); }
 
-    Vetor getRayDirection(int i, int j) const {
+    Vetor getRayDirection(double i, double j) const {
         double deslocamento_u = (i + 0.5) * pixel_size;
         double deslocamento_v = (j + 0.5) * pixel_size;
 

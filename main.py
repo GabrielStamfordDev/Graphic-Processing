@@ -484,6 +484,16 @@ def processar_malha(
             
             obj.material.ns = mat_mtl.ns
 
+            obj.material.kr.r = mat_mtl.kr.x
+            obj.material.kr.g = mat_mtl.kr.y
+            obj.material.kr.b = mat_mtl.kr.z
+            
+            obj.material.kt.r = mat_mtl.kt.x
+            obj.material.kt.g = mat_mtl.kt.y
+            obj.material.kt.b = mat_mtl.kt.z
+            
+            obj.material.ni = mat_mtl.ni
+
     for face in faces_data:
         # Pega os vértices originais
         v0_raw = vertices_raw[face.vertice_indice[0]]
@@ -544,6 +554,90 @@ def processar_malha(
 # ============================================================
 # MAIN
 # ============================================================
+def trace_ray(ray_origin, ray_dir, scene_data, intersect_func, depth=0):
+    # 1. Limite de Recursão (Requisito dos Monitores)
+    if depth >= 5:
+        return Vetor(0, 0, 0)
+        
+    closest_t = float("inf")
+    hit_obj = None
+    hit_normal = None
+
+    # Encontra o objeto mais próximo
+    for obj in scene_data.objects:
+        t, normal = intersect_func(obj, ray_origin, ray_dir)
+        if t < closest_t:
+            closest_t = t
+            hit_obj = obj
+            hit_normal = normal
+
+    # Se não atingir nada, retorna o background (preto)
+    if hit_obj is None:
+        return Vetor(0, 0, 0)
+
+    # 2. Base da Interseção
+    P = ray_origin + (ray_dir * closest_t)
+    N = hit_normal
+    
+    # Verifica se o raio está entrando ou saindo do objeto
+    entrando = ray_dir.dot(N) < 0
+    if not entrando:
+        N = N * (-1.0) # Inverte para cálculos de luz e refração de saída
+        
+    # 3. Cor Base (Phong) - Assume-se que calcular_cor_phong retorna (r, g, b)
+    cor_r, cor_g, cor_b = calcular_cor_phong(P, N, ray_dir, hit_obj, scene_data, intersect_func)
+    cor_final = Vetor(cor_r, cor_g, cor_b)
+
+    mat = hit_obj.material
+    
+    # 4. REFLEXÃO (Mirror)
+    if mat.kr.r > 0 or mat.kr.g > 0 or mat.kr.b > 0:
+        cos_i = -ray_dir.dot(N)
+        # R = d + 2 * cos * N
+        R_dir = ray_dir + (N * (2.0 * cos_i))
+        R_dir = R_dir.normalize()
+        
+        # Deslocamos com Epsilon "para fora" da superfície para evitar auto-interseção
+        P_refl = P + (N * 1e-4)
+        cor_refl = trace_ray(P_refl, R_dir, scene_data, intersect_func, depth + 1)
+        
+        # Soma kr * I_r
+        cor_final.x += mat.kr.r * cor_refl.x
+        cor_final.y += mat.kr.g * cor_refl.y
+        cor_final.z += mat.kr.b * cor_refl.z
+
+    # 5. REFRAÇÃO (Lentes / Vidros)
+    if mat.kt.r > 0 or mat.kt.g > 0 or mat.kt.b > 0:
+        if entrando:
+            n1 = 1.0     # Índice do Ar
+            n2 = mat.ni  # Índice do Material
+        else:
+            n1 = mat.ni
+            n2 = 1.0
+            
+        razao = n1 / n2
+        cos_i = -ray_dir.dot(N)
+        sin2_t = (razao ** 2) * (1.0 - cos_i ** 2)
+        
+        # Se sin2_t > 1.0, ocorreu Reflexão Interna Total (TIR). Pulamos a refração!
+        if sin2_t <= 1.0:
+            cos_t = np.sqrt(1.0 - sin2_t)
+            
+            # Lei de Snell vetorial
+            T_dir = (ray_dir * razao) + (N * (razao * cos_i - cos_t))
+            T_dir = T_dir.normalize()
+            
+            # Deslocamos com Epsilon "para dentro" da superfície (-N)
+            P_refr = P - (N * 1e-4)
+            cor_refr = trace_ray(P_refr, T_dir, scene_data, intersect_func, depth + 1)
+            
+            # Soma kt * I_t
+            cor_final.x += mat.kt.r * cor_refr.x
+            cor_final.y += mat.kt.g * cor_refr.y
+            cor_final.z += mat.kt.b * cor_refr.z
+
+    return cor_final
+
 
 def main():
 
@@ -626,43 +720,17 @@ def main():
 
     for j in range(cam.vres):
         print(f"Linha {j}/{cam.vres}", file=sys.stderr, end='\r')
-
+        
         for i in range(cam.hres):
             ray_dir = cam.get_ray_direction(i, j)
 
-            closest_t = float("inf")
-            hit_obj = None
-            hit_normal = None
+            # A CHAMADA MÁGICA: O Ray Tracer entra em ação!
+            cor_pixel = trace_ray(cam.C, ray_dir, scene_data, intersect_object, depth=0)
 
-            # 1. ENCONTRA O OBJETO MAIS PRÓXIMO
-            for obj in scene_data.objects:
-                t, normal = intersect_object(obj, cam.C, ray_dir)
-                
-                if t < closest_t:
-                    closest_t = t
-                    hit_obj = obj
-                    hit_normal = normal
-
-            # Se não bateu em nada, fundo preto
-            if hit_obj is None:
-                print("0 0 0")
-                continue
-
-            # 2. PREPARATIVOS PARA A EQUAÇÃO DE PHONG
-            P = cam.C + (ray_dir * closest_t)
-            
-            cor_r, cor_g, cor_b = calcular_cor_phong(
-                P,
-                hit_normal,
-                ray_dir,
-                hit_obj,
-                scene_data,
-                intersect_object
-            )
-
-            r_final = int(255.999 * cor_r)
-            g_final = int(255.999 * cor_g)
-            b_final = int(255.999 * cor_b)
+            # Conversão e Clamping
+            r_final = min(255, max(0, int(255.999 * cor_pixel.x)))
+            g_final = min(255, max(0, int(255.999 * cor_pixel.y)))
+            b_final = min(255, max(0, int(255.999 * cor_pixel.z)))
 
             print(f"{r_final} {g_final} {b_final}")
 

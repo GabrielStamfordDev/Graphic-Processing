@@ -51,6 +51,27 @@ namespace {
         objeto.mesh_n0 = move(n0_list);
         objeto.mesh_n1 = move(n1_list);
         objeto.mesh_n2 = move(n2_list);
+        double min_val = std::numeric_limits<double>::infinity();
+        double max_val = -std::numeric_limits<double>::infinity();
+        double x1 = min_val, y1 = min_val, z1 = min_val;
+        double x2 = max_val, y2 = max_val, z2 = max_val;
+        for (size_t i = 0; i < objeto.mesh_v0.size(); ++i) {
+            std::array<Ponto, 3> vertices = {objeto.mesh_v0[i], objeto.mesh_v1[i], objeto.mesh_v2[i]};
+            for (const auto& v : vertices) {
+                x1 = std::min(x1, v.getX());
+                y1 = std::min(y1, v.getY());
+                z1 = std::min(z1, v.getZ());
+                x2 = std::max(x2, v.getX());
+                y2 = std::max(y2, v.getY());
+                z2 = std::max(z2, v.getZ());
+            }
+        }
+        Ponto minimo(x1,y1,z1);
+        Ponto maximo(x2,y2,z2);
+        double folga = 1e-4;
+        objeto.aabb_min = minimo - Vetor(folga, folga, folga);
+        objeto.aabb_max = maximo + Vetor(folga, folga, folga);
+        objeto.has_aabb = true;
     }
 
     void material(ObjectData& objeto, std::vector<FaceData>& faces_data){

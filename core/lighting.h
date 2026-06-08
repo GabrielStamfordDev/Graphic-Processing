@@ -12,6 +12,9 @@ std::array<double, 3> calcular_cor_phong(
     const Vetor& N_in,
     const Vetor& ray_dir,
     const ObjectData& hit_obj,
-    const SceneData& scene_data,
+    const ColorData& cor_global,
+    const Ponto& LookFrom_atual,
+    const std::vector<LightData>& LightList,
+    const std::vector<ObjectData>& valid_objects,
     const std::function<HitResult(const ObjectData&, const Ponto&, const Vetor&)>& intersect_func
 );
