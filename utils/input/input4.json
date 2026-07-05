@@ -1,50 +1,106 @@
 {
-  "camera": {
-    "lookfrom": [8, 4, 12],
-    "lookat": [0, 0, 0],
-    "upVector": [0, 1, 0],
-    "image_width": 500,
-    "image_height": 500,
-    "screen_distance": 0.75
-  },
+  "globalLight": [0.2, 0.2, 0.2],
 
-  "globalLight": [0.1, 0.1, 0.1],
+  "camera": {
+    "lookfrom": [0.0, 2.0, 9.0],
+    "lookat": [0.0, 1.0, 0.0],
+    "upVector": [0.0, 1.0, 0.0],
+    "image_width": 900,
+    "image_height": 500,
+    "screen_distance": 1.0
+  },
 
   "lights": [
     {
-      "position": [10, 10, 10],
-      "color": [1, 1, 1],
-      "name": ""
+      "name": "Luz do Topo",
+      "position": [0.0, 10.0, 0.0],
+      "color": [2.0, 2.0, 2.0]
     }
   ],
 
   "materials": {
-    "red": {
-      "name": "red",
-      "color": [1, 0, 0],
-      "ks": [0, 0, 0],
-      "ka": [1, 0, 0],
-      "kr": [0, 0, 0],
-      "kt": [0, 0, 0],
-      "ns": 1,
-      "ni": 1,
-      "d": 1
+    "chao": {
+      "color": [0.2, 0.2, 0.2],
+      "ka": [0.05, 0.05, 0.05],
+      "ks": [0.1, 0.1, 0.1],
+      "kr": [0.0, 0.0, 0.0],
+      "kt": [0.0, 0.0, 0.0],
+      "ns": 10,
+      "ni": 1.0,
+      "d": 1.0
+    },
+    "espelho_puro": {
+      "color": [0.0, 0.0, 0.0],
+      "ka": [0.0, 0.0, 0.0],
+      "ks": [0.0, 0.0, 0.0],
+      "kr": [0.99, 0.99, 0.99],
+      "kt": [0.0, 0.0, 0.0],
+      "ns": 1000,
+      "ni": 1.0,
+      "d": 1.0
+    },
+    "ouro": {
+      "color": [0.85, 0.65, 0.15],
+      "ka": [0.17, 0.13, 0.03],
+      "ks": [0.9, 0.9, 0.9],
+      "kr": [0.3, 0.3, 0.3],
+      "ns": 128,
+      "ni": 1.0,
+      "d": 1.0
+    },
+    "ciano": {
+      "color": [0.0, 0.8, 0.8],
+      "ka": [0.0, 0.16, 0.16],
+      "ks": [0.6, 0.6, 0.6],
+      "kr": [0.0, 0.0, 0.0],
+      "ns": 64,
+      "ni": 1.0,
+      "d": 1.0
     }
   },
 
   "objects": [
     {
-      "type": "mesh",
-      "relativePos": [0, 0, 0],
-      "material": "red",
-      "path": "utils/input/cubo.obj",
-
-      "transform": [
-        {
-          "type": "scaling",
-          "factors": [2, 2, 2]
-        }
-      ]
+      "name": "Plano",
+      "type": "plane",
+      "point_on_plane": [0.0, 0.0, 0.0],
+      "normal": [0.0, 1.0, 0.0],
+      "material": "chao"
+    },
+    {
+      "name": "Parede Espelho Esquerda",
+      "type": "sphere",
+      "center": [-1005.0, 0.0, 0.0],
+      "radius": 1000.0,
+      "material": "espelho_puro"
+    },
+    {
+      "name": "Parede Espelho Direita",
+      "type": "sphere",
+      "center": [1005.0, 0.0, 0.0],
+      "radius": 1000.0,
+      "material": "espelho_puro"
+    },
+    {
+      "name": "Bola Ouro Centro",
+      "type": "sphere",
+      "center": [0.0, 1.0, 0.0],
+      "radius": 0.8,
+      "material": "ouro"
+    },
+    {
+      "name": "Bola Ciano Frente",
+      "type": "sphere",
+      "center": [-1.0, 0.6, 3.0],
+      "radius": 0.5,
+      "material": "ciano"
+    },
+    {
+      "name": "Bola Ciano Fundo",
+      "type": "sphere",
+      "center": [1.0, 1.5, -3.0],
+      "radius": 0.7,
+      "material": "ciano"
     }
   ]
 }

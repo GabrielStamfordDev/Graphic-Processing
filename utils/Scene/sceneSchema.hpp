@@ -9,6 +9,7 @@
 #include <unordered_map>
 #include <algorithm>
 #include "../MeshReader/ObjReader.h"
+#include <cstdint>
 using namespace std;
 
 

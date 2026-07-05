@@ -15,10 +15,10 @@ Matriz4x4 matriz_rotacao_y(double angulo_graus);
 Matriz4x4 matriz_rotacao_z(double angulo_graus);
 Matriz4x4 matriz_inversa(const Matriz4x4& m);
 Matriz4x4 build_transform_matriz(const vector<TransformData>& A,const Ponto& B, const string& C);
+Matriz4x4 extrair_apenas_rotacao(const Matriz4x4 &M_Transform);
 Vetor aplicar_matriz_normal_inv_t(const Matriz4x4& M, const Vetor& n);
 
 Ponto aplicar_matriz_ponto(const Matriz4x4& matriz, const Ponto& ponto);
 Vetor aplicar_matriz_vetor(const Matriz4x4& matriz, const Vetor& vetor);
 Vetor aplicar_matriz_normal(const Matriz4x4& matriz, const Vetor& normal);
-
 double crescimento_raio(const Matriz4x4& matriz);

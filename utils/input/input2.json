@@ -1,50 +1,148 @@
 {
-  "camera": {
-    "lookfrom": [8, 4, 12],
-    "lookat": [0, 0, 0],
-    "upVector": [0, 1, 0],
-    "image_width": 500,
-    "image_height": 500,
-    "screen_distance": 0.75
-  },
+  "globalLight": [0.25, 0.25, 0.25],
 
-  "globalLight": [0.1, 0.1, 0.1],
+  "camera": {
+    "lookfrom": [0.0, 3.5, 10.5],
+    "lookat": [0.0, 0.0, 0.0],
+    "upVector": [0.0, 1.0, 0.0],
+    "image_width": 900,
+    "image_height": 500,
+    "screen_distance": 0.9
+  },
 
   "lights": [
     {
-      "position": [10, 10, 10],
-      "color": [1, 1, 1],
-      "name": ""
+      "name": "Key Light",
+      "position": [4.0, 8.0, 5.0],
+      "color": [1.8, 1.8, 1.8]
+    },
+    {
+      "name": "Fill Light",
+      "position": [-6.0, 6.0, 5.0],
+      "color": [0.7, 0.7, 0.7]
+    },
+    {
+      "name": "Top Light",
+      "position": [0.0, 15.0, 2.0],
+      "color": [0.4, 0.4, 0.4]
     }
   ],
 
   "materials": {
-    "red": {
-      "name": "red",
-      "color": [1, 0, 0],
-      "ks": [0, 0, 0],
-      "ka": [1, 0, 0],
-      "kr": [0, 0, 0],
-      "kt": [0, 0, 0],
-      "ns": 1,
-      "ni": 1,
-      "d": 1
+    "mat_plano": {
+      "color": [0.15, 0.15, 0.15],
+      "ka": [0.05, 0.05, 0.05],
+      "ks": [0.2, 0.2, 0.2],
+      "kr": [0.1, 0.1, 0.1],
+      "kt": [0.0, 0.0, 0.0],
+      "ns": 50,
+      "ni": 1.0,
+      "d": 1.0
+    },
+
+    "mat_espelho": {
+      "color": [0.0, 0.0, 0.0],
+      "ka": [0.0, 0.0, 0.0],
+      "ks": [0.0, 0.0, 0.0],
+      "kr": [0.95, 0.95, 0.95],
+      "kt": [0.0, 0.0, 0.0],
+      "ns": 1000,
+      "ni": 1.0,
+      "d": 1.0
+    },
+
+    "mat_vidro": {
+      "color": [0.95, 0.95, 1.0],
+      "ka": [0.05, 0.05, 0.05],
+      "ks": [0.9, 0.9, 0.9],
+      "kr": [0.1, 0.1, 0.1],
+      "kt": [0.9, 0.9, 0.9],
+      "ns": 500,
+      "ni": 1.5,
+      "d": 0.05
+    },
+
+    "mat_colorida": {
+      "color": [1.0, 0.15, 0.85],
+      "ka": [0.2, 0.03, 0.17],
+      "ks": [1.0, 1.0, 1.0],
+      "kr": [0.0, 0.0, 0.0],
+      "kt": [0.0, 0.0, 0.0],
+      "ns": 200,
+      "ni": 1.0,
+      "d": 1.0
+    },
+
+    "mat_rough_baixa": {
+      "color": [0.1, 0.6, 0.9],
+      "ka": [0.02, 0.12, 0.18],
+      "ks": [0.8, 0.8, 0.8],
+      "kr": [0.2, 0.2, 0.2],
+      "kt": [0.0, 0.0, 0.0],
+      "ns": 512,
+      "ni": 1.0,
+      "d": 1.0
+    },
+
+    "mat_rough_alta": {
+      "color": [0.78, 0.72, 0.62],
+      "ka": [0.08, 0.075, 0.065],
+      "ks": [0.2, 0.2, 0.2],
+      "kr": [0.0, 0.0, 0.0],
+      "kt": [0.0, 0.0, 0.0],
+      "ns": 8,
+      "ni": 1.0,
+      "d": 1.0
     }
   },
 
   "objects": [
     {
-      "type": "mesh",
-      "relativePos": [0, 0, 0],
-      "material": "red",
-      "path": "utils/input/cubo.obj",
+      "name": "Plano",
+      "type": "plane",
+      "point_on_plane": [0.0, -1.2, 0.0],
+      "normal": [0.0, 1.0, 0.0],
+      "material": "mat_plano"
+    },
 
-      "transform": [
-        {
-          "type": "rotation",
-          "angle": [0, 45, 0]
-        }
-      ]
+    {
+      "name": "Bola 1 - Espelho Puro",
+      "type": "sphere",
+      "center": [-4.8, 0.0, 0.0],
+      "radius": 1.2,
+      "material": "mat_espelho"
+    },
+
+    {
+      "name": "Bola 2 - Azul Polido",
+      "type": "sphere",
+      "center": [-2.4, 0.0, 0.0],
+      "radius": 1.2,
+      "material": "mat_rough_baixa"
+    },
+
+    {
+      "name": "Bola 3 - Vidro Refrativo",
+      "type": "sphere",
+      "center": [0.0, 0.0, 0.0],
+      "radius": 1.2,
+      "material": "mat_vidro"
+    },
+
+    {
+      "name": "Bola 4 - Magenta",
+      "type": "sphere",
+      "center": [2.4, 0.0, 0.0],
+      "radius": 1.2,
+      "material": "mat_colorida"
+    },
+
+    {
+      "name": "Bola 5 - Metal Fosco",
+      "type": "sphere",
+      "center": [4.8, 0.0, 0.0],
+      "radius": 1.2,
+      "material": "mat_rough_alta"
     }
   ]
 }

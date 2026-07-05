@@ -20,6 +20,15 @@ Matriz4x4 operator*(const Matriz4x4& A, const Matriz4x4& B){
     return C;
 }
 
+Matriz4x4 extrair_apenas_rotacao(const Matriz4x4& M_Transform) {
+    Matriz4x4 M_Rot = M_Transform;
+    M_Rot[0][3] = 0.0;
+    M_Rot[1][3] = 0.0;
+    M_Rot[2][3] = 0.0;
+    M_Rot[3][3] = 1.0;
+    return M_Rot;
+}
+
 
 Matriz4x4 matriz_translacao(double dx, double dy, double dz){
 	Matriz4x4 matriz{};
@@ -200,7 +209,7 @@ Matriz4x4 build_transform_matriz(const vector<TransformData>& transforma,const P
     if(tipo == "mesh") pivo_acumulado = Ponto(0, 0, 0);
     else pivo_acumulado = relativePos;
 
-    for(const auto& t : transforma){
+    for(const auto& t: transforma){
         M_atual = matriz_identidade();
         if(t.tType == "scaling" && tipo != "plane"){
             Mpinv = matriz_translacao(-pivo_acumulado.getX(),-pivo_acumulado.getY(),-pivo_acumulado.getZ());

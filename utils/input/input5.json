@@ -1,50 +1,99 @@
 {
-  "camera": {
-    "lookfrom": [12, 5, 15],
-    "lookat": [5, 0, 0],
-    "upVector": [0, 1, 0],
-    "image_width": 500,
-    "image_height": 500,
-    "screen_distance": 0.75
-  },
+  "globalLight": [0.25, 0.25, 0.3],
 
-  "globalLight": [0.1, 0.1, 0.1],
+  "camera": {
+    "lookfrom": [0.0, 2.0, 8.0],
+    "lookat": [0.0, 0.0, 0.0],
+    "upVector": [0.0, 1.0, 0.0],
+    "image_width": 900,
+    "image_height": 500,
+    "screen_distance": 0.8
+  },
 
   "lights": [
     {
-      "position": [15, 10, 15],
-      "color": [1, 1, 1],
-      "name": ""
+      "name": "Luz Direcional",
+      "position": [6.0, 8.0, 4.0],
+      "color": [1.5, 1.5, 1.5]
+    },
+    {
+      "name": "Luz de Preenchimento",
+      "position": [-6.0, 4.0, 2.0],
+      "color": [0.5, 0.5, 0.6]
     }
   ],
 
   "materials": {
-    "red": {
-      "name": "red",
-      "color": [1, 0, 0],
-      "ks": [0, 0, 0],
-      "ka": [1, 0, 0],
-      "kr": [0, 0, 0],
-      "kt": [0, 0, 0],
+    "piso_xadrez_substituto": {
+      "color": [0.3, 0.3, 0.3],
+      "ka": [0.1, 0.1, 0.1],
+      "ks": [0.5, 0.5, 0.5],
+      "kr": [0.2, 0.2, 0.2],
+      "kt": [0.0, 0.0, 0.0],
+      "ns": 100,
+      "ni": 1.0,
+      "d": 1.0
+    },
+    "vidro_externo": {
+      "color": [0.95, 0.98, 0.95],
+      "ka": [0.0, 0.0, 0.0],
+      "ks": [0.9, 0.9, 0.9],
+      "kr": [0.1, 0.1, 0.1],
+      "kt": [0.9, 0.9, 0.9],
+      "ns": 400,
+      "ni": 1.5,
+      "d": 0.0
+    },
+    "ar_interno": {
+      "color": [1.0, 1.0, 1.0],
+      "ka": [0.0, 0.0, 0.0],
+      "ks": [0.0, 0.0, 0.0],
+      "kr": [0.0, 0.0, 0.0],
+      "kt": [1.0, 1.0, 1.0],
       "ns": 1,
-      "ni": 1,
-      "d": 1
+      "ni": 1.0,
+      "d": 0.0
+    },
+    "alvo_fundo": {
+      "color": [1.0, 0.2, 0.2],
+      "ka": [0.2, 0.04, 0.04],
+      "ks": [0.8, 0.8, 0.8],
+      "kr": [0.0, 0.0, 0.0],
+      "kt": [0.0, 0.0, 0.0],
+      "ns": 128,
+      "ni": 1.0,
+      "d": 1.0
     }
   },
 
   "objects": [
     {
-      "type": "mesh",
-      "relativePos": [5, 0, 0],
-      "material": "red",
-      "path": "utils/input/cubo.obj",
-
-      "transform": [
-        {
-          "type": "scaling",
-          "factors": [2, 2, 2]
-        }
-      ]
+      "name": "Plano",
+      "type": "plane",
+      "point_on_plane": [0.0, -2.0, 0.0],
+      "normal": [0.0, 1.0, 0.0],
+      "material": "piso_xadrez_substituto"
+    },
+    {
+      "name": "Esfera Vidro Externa",
+      "type": "sphere",
+      "center": [0.0, 0.0, 0.0],
+      "radius": 2.0,
+      "material": "vidro_externo"
+    },
+    {
+      "name": "Esfera Vacuo Interna",
+      "type": "sphere",
+      "center": [0.0, 0.0, 0.0],
+      "radius": 1.6,
+      "material": "ar_interno"
+    },
+    {
+      "name": "Esfera Alvo Traseira",
+      "type": "sphere",
+      "center": [0.0, 0.0, -6.0],
+      "radius": 1.5,
+      "material": "alvo_fundo"
     }
   ]
 }

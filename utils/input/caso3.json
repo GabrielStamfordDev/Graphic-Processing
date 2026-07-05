@@ -1,56 +1,57 @@
 {
-  "globalLight": [0.3, 0.3, 0.3],
-
-  "materials": {
-    "azul": {
-      "color": [0.0, 0.1, 1.0]
-    },
-    "vermelho": {
-      "color": [1.0, 0.0, 0.1]
-    },
-    "chao": {
-      "color": [0.70, 0.3, 0.1]
-    }
-  },
-
   "camera": {
-    "lookfrom": [120, 120, -200],
-    "lookat": [68, 90, 0],
-    "vup": [1, 1, 0],
-    "image_width": 600,
-    "image_height": 600,
+    "lookfrom": [0.0, 2.0, 7.0],
+    "lookat": [0.0, 0.0, 0.0],
+    "upVector": [0.0, 1.0, 0.0],
+    "image_width": 1280,
+    "image_height": 720,
     "screen_distance": 0.75
   },
-
+  "globalLight": [0.05, 0.05, 0.05],
   "lights": [
-    {
-      "name": "Luz do Teto",
-      "position": [278, 548, -278],
-      "color": [1.0, 1.0, 1.0]
-    }
+    { "position": [10.0, 15.0, 10.0], "color": [0.8, 0.8, 0.8], "name": "" },
+    { "position": [-10.0, 10.0, 5.0], "color": [0.3, 0.3, 0.3], "name": "" }
   ],
-
+  "materials": {
+    "chao_cinza": {
+      "name": "chao_cinza",
+      "color": [0.6, 0.6, 0.6],
+      "ks": [0.0, 0.0, 0.0],
+      "ka": [0.6, 0.6, 0.6],
+      "kr": [0.0, 0.0, 0.0],
+      "kt": [0.0, 0.0, 0.0],
+      "ns": 1.0,
+      "ni": 1.0,
+      "d": 1.0
+    }
+  },
   "objects": [
     {
-      "name": "Chão",
+      "type": "cone",
+      "relativePos": [0.0, 0.0, 0.0],
+      "eixo": [0.0, 1.0, 0.0],
+      "radius": 0.75,
+      "height": 2.0,
+      "material": {
+        "color": [0.1, 0.5, 0.8],
+        "ka": [0.0, 0.1, 0.2],
+        "kd": [0.1, 0.5, 0.8],
+        "ks": [0.4, 0.4, 0.4],
+        "ns": 32.0
+      },
+      "transform": []
+    },
+    {
       "type": "plane",
-      "point_on_plane": [0, 0, 0],
-      "normal": [0, 1, 0],
-      "material": "chao"
-    },
-    {
-      "name": "Esfera azul",
-      "type": "sphere",
-      "center": [0, 100, 0],
-      "radius": 90,
-      "material": "azul"
-    },
-    {
-      "name": "Esfera vermelha",
-      "type": "sphere",
-      "center": [100, 90, -500],
-      "radius": 50,
-      "material": "vermelho"
+      "relativePos": [0.0, -2.0, 0.0],
+      "normal": [0.0, 1.0, 0.0],
+      "material": {
+        "color": [0.6, 0.6, 0.6],
+        "ka": [0.2, 0.2, 0.2],
+        "kd": [0.6, 0.6, 0.6],
+        "ks": [0.0, 0.0, 0.0],
+        "ns": 1.0
+      }
     }
   ]
 }

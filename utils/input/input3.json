@@ -1,50 +1,116 @@
 {
-  "camera": {
-    "lookfrom": [12, 5, 15],
-    "lookat": [5, 0, 0],
-    "upVector": [0, 1, 0],
-    "image_width": 500,
-    "image_height": 500,
-    "screen_distance": 0.75
-  },
+  "globalLight": [0.3, 0.3, 0.3],
 
-  "globalLight": [0.1, 0.1, 0.1],
+  "camera": {
+    "lookfrom": [0.0, 2.5, 12.0],
+    "lookat": [0.0, 0.5, 0.0],
+    "upVector": [0.0, 1.0, 0.0],
+    "image_width": 900,
+    "image_height": 500,
+    "screen_distance": 1.0
+  },
 
   "lights": [
     {
-      "position": [15, 10, 15],
-      "color": [1, 1, 1],
-      "name": ""
+      "name": "Luz Principal",
+      "position": [5.0, 10.0, 5.0],
+      "color": [1.5, 1.5, 1.5]
+    },
+    {
+      "name": "Luz Traseira (Rim)",
+      "position": [0.0, 5.0, -10.0],
+      "color": [0.8, 0.8, 0.8]
     }
   ],
 
   "materials": {
-    "red": {
-      "name": "red",
-      "color": [1, 0, 0],
-      "ks": [0, 0, 0],
-      "ka": [1, 0, 0],
-      "kr": [0, 0, 0],
-      "kt": [0, 0, 0],
-      "ns": 1,
-      "ni": 1,
-      "d": 1
+    "chao_escuro": {
+      "color": [0.1, 0.1, 0.1],
+      "ka": [0.02, 0.02, 0.02],
+      "ks": [0.2, 0.2, 0.2],
+      "kr": [0.1, 0.1, 0.1],
+      "kt": [0.0, 0.0, 0.0],
+      "ns": 50,
+      "ni": 1.0,
+      "d": 1.0
+    },
+    "vidro_puro": {
+      "color": [1.0, 1.0, 1.0],
+      "ka": [0.0, 0.0, 0.0],
+      "ks": [0.9, 0.9, 0.9],
+      "kr": [0.1, 0.1, 0.1],
+      "kt": [0.9, 0.9, 0.9],
+      "ns": 500,
+      "ni": 1.52,
+      "d": 0.0
+    },
+    "vermelho": {
+      "color": [1.0, 0.0, 0.0],
+      "ka": [0.2, 0.0, 0.0],
+      "ks": [0.5, 0.5, 0.5],
+      "kr": [0.0, 0.0, 0.0],
+      "kt": [0.0, 0.0, 0.0],
+      "ns": 32,
+      "ni": 1.0,
+      "d": 1.0
+    },
+    "verde": {
+      "color": [0.0, 1.0, 0.0],
+      "ka": [0.0, 0.2, 0.0],
+      "ks": [0.5, 0.5, 0.5],
+      "kr": [0.0, 0.0, 0.0],
+      "kt": [0.0, 0.0, 0.0],
+      "ns": 32,
+      "ni": 1.0,
+      "d": 1.0
+    },
+    "azul": {
+      "color": [0.0, 0.0, 1.0],
+      "ka": [0.0, 0.0, 0.2],
+      "ks": [0.5, 0.5, 0.5],
+      "kr": [0.0, 0.0, 0.0],
+      "kt": [0.0, 0.0, 0.0],
+      "ns": 32,
+      "ni": 1.0,
+      "d": 1.0
     }
   },
 
   "objects": [
     {
-      "type": "mesh",
-      "relativePos": [5, 0, 0],
-      "material": "red",
-      "path": "utils/input/cubo.obj",
-
-      "transform": [
-        {
-          "type": "rotation",
-          "angle": [0, 45, 0]
-        }
-      ]
+      "name": "Plano",
+      "type": "plane",
+      "point_on_plane": [0.0, -1.0, 0.0],
+      "normal": [0.0, 1.0, 0.0],
+      "material": "chao_escuro"
+    },
+    {
+      "name": "Vidro Frontal",
+      "type": "sphere",
+      "center": [0.0, 1.0, 4.0],
+      "radius": 2.0,
+      "material": "vidro_puro"
+    },
+    {
+      "name": "Fundo Vermelho",
+      "type": "sphere",
+      "center": [-2.5, 0.5, -2.0],
+      "radius": 1.5,
+      "material": "vermelho"
+    },
+    {
+      "name": "Fundo Verde",
+      "type": "sphere",
+      "center": [0.0, 0.5, -2.0],
+      "radius": 1.5,
+      "material": "verde"
+    },
+    {
+      "name": "Fundo Azul",
+      "type": "sphere",
+      "center": [2.5, 0.5, -2.0],
+      "radius": 1.5,
+      "material": "azul"
     }
   ]
 }

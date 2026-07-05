@@ -3,9 +3,11 @@
 #include "transformacoes.h"
 #include <iostream>
 #include <filesystem>
+#include <cmath>
+#include <algorithm>
 
 namespace {
-    void mesh_points(objReader& mesh_reader, std::vector<FaceData>& faces_data,ObjectData& objeto, bool transformar, const Matriz4x4& M_Transform){
+    void mesh_points(objReader& mesh_reader, std::vector<FaceData>& faces_data, ObjectData& objeto, bool transformar, const Matriz4x4& M_Transform){
         vector<Ponto> v0_list, v1_list, v2_list;
         vector<Vetor> n0_list, n1_list, n2_list;
         auto vertices_raw = mesh_reader.getVertices();
@@ -94,6 +96,27 @@ namespace {
             }
         }
     }
+
+    // Calcula dinamicamente as escalas do raio e da altura para qualquer orientação de eixo inicial
+    std::pair<double, double> calcular_escala_cilindro_cone(const Matriz4x4& M_Transform, const Vetor& eixo_base) {
+        // Extrai a escala pura embutida nas colunas da matriz
+        double sx = std::sqrt(M_Transform[0][0]*M_Transform[0][0] + M_Transform[1][0]*M_Transform[1][0] + M_Transform[2][0]*M_Transform[2][0]);
+        double sy = std::sqrt(M_Transform[0][1]*M_Transform[0][1] + M_Transform[1][1]*M_Transform[1][1] + M_Transform[2][1]*M_Transform[2][1]);
+        double sz = std::sqrt(M_Transform[0][2]*M_Transform[0][2] + M_Transform[1][2]*M_Transform[1][2] + M_Transform[2][2]*M_Transform[2][2]);
+
+        // Projeta os pesos do eixo inicial nas componentes de escala linear
+        double s_altura = std::sqrt(
+            (eixo_base.getX() * eixo_base.getX() * sx * sx) +
+            (eixo_base.getY() * eixo_base.getY() * sy * sy) +
+            (eixo_base.getZ() * eixo_base.getZ() * sz * sz)
+        );
+
+        // Deduz a escala média perpendicular (raio) usando invariância de volume (determinante)
+        double volume = sx * sy * sz;
+        double s_raio = std::sqrt(volume / (s_altura > 1e-6 ? s_altura : 1.0));
+
+        return {s_raio, s_altura};
+    }
 }
 
 CenaProcessada prepararObjetos(const std::vector<ObjectData>& raw_objects, bool transformar){
@@ -102,6 +125,7 @@ CenaProcessada prepararObjetos(const std::vector<ObjectData>& raw_objects, bool 
         ObjectData objeto = object;
         Matriz4x4 M_Transform;
         if(!object.transforms.empty() && transformar) M_Transform = build_transform_matriz(object.transforms, object.relativePos, object.objType);
+        
         if(object.objType == "mesh"){
             string obj_path = objeto.getProperty("path");
             if(!filesystem::exists(obj_path)){
@@ -119,16 +143,57 @@ CenaProcessada prepararObjetos(const std::vector<ObjectData>& raw_objects, bool 
             material(objeto, faces_data);
             mesh_points(mesh_reader, faces_data, objeto, transformar, M_Transform);
         }
-        else if(object.objType == "plane" && transformar && !object.transforms.empty()){
-            objeto.relativePos = aplicar_matriz_ponto(M_Transform, objeto.relativePos);
-            Vetor normal = objeto.vetorPointData.at("normal");
-            normal = aplicar_matriz_normal(M_Transform, normal);
-            objeto.vetorPointData.at("normal") = normal;
+        else if(object.objType == "plane"){
+            if(transformar && !object.transforms.empty()){
+                objeto.relativePos = aplicar_matriz_ponto(M_Transform, objeto.relativePos);
+                Vetor normal = objeto.vetorPointData.at("normal");
+                Matriz4x4 M_Rot = extrair_apenas_rotacao(M_Transform);
+                normal = aplicar_matriz_normal(M_Rot, normal);
+                objeto.vetorPointData.at("normal") = normal;
+            }
         }
-        else if(object.objType == "sphere" && transformar && !object.transforms.empty()){
-            objeto.relativePos = aplicar_matriz_ponto(M_Transform, object.relativePos);
-            double s = crescimento_raio(M_Transform);
-            objeto.numericData.at("radius") *= s;
+        else if(object.objType == "sphere"){
+            if(transformar && !object.transforms.empty()){
+                objeto.relativePos = aplicar_matriz_ponto(M_Transform, object.relativePos);
+                double s = crescimento_raio(M_Transform);
+                objeto.numericData.at("radius") *= s;
+            }
+        }
+        else if(object.objType == "cylinder"){
+            Vetor eixo_base = objeto.vetorPointData.count("eixo") ? objeto.vetorPointData.at("eixo") : Vetor(0.0, 1.0, 0.0);
+            eixo_base = eixo_base.normalize();
+
+            if(transformar && !object.transforms.empty()){
+                objeto.relativePos = aplicar_matriz_ponto(M_Transform, object.relativePos);
+                
+                Matriz4x4 M_Rot = extrair_apenas_rotacao(M_Transform);
+                objeto.vetorPointData["eixo"] = aplicar_matriz_vetor(M_Rot, eixo_base).normalize();
+                
+                // Extração dinâmica e robusta de escala para qualquer eixo arbitrário
+                auto [s_raio, s_altura] = calcular_escala_cilindro_cone(M_Transform, eixo_base);
+                objeto.numericData.at("radius") *= s_raio;
+                objeto.numericData.at("height") *= s_altura;
+            } else {
+                objeto.vetorPointData["eixo"] = eixo_base;
+            }
+        }
+        else if(object.objType == "cone"){
+            Vetor eixo_base = objeto.vetorPointData.count("eixo") ? objeto.vetorPointData.at("eixo") : Vetor(0.0, 1.0, 0.0);
+            eixo_base = eixo_base.normalize();
+
+            if(transformar && !object.transforms.empty()){
+                objeto.relativePos = aplicar_matriz_ponto(M_Transform, object.relativePos);
+                
+                Matriz4x4 M_Rot = extrair_apenas_rotacao(M_Transform);
+                objeto.vetorPointData["eixo"] = aplicar_matriz_vetor(M_Rot, eixo_base).normalize();
+                
+                // Extração dinâmica e robusta de escala para qualquer eixo arbitrário
+                auto [s_raio, s_altura] = calcular_escala_cilindro_cone(M_Transform, eixo_base);
+                objeto.numericData.at("radius") *= s_raio;
+                objeto.numericData.at("height") *= s_altura;
+            } else {
+                objeto.vetorPointData["eixo"] = eixo_base;
+            }
         }
         Resultado.valid_objects.push_back(move(objeto));
     }

@@ -1,64 +1,61 @@
 {
-  "globalLight": [0.1, 0.1, 0.1],
-
+  "camera": {
+    "lookfrom": [0.0, 2.0, 7.0],
+    "lookat": [0.0, 0.0, 0.0],
+    "upVector": [0.0, 1.0, 0.0],
+    "image_width": 1280,
+    "image_height": 720,
+    "screen_distance": 0.75
+  },
+  "globalLight": [0.05, 0.05, 0.05],
+  "lights": [
+    { "position": [10.0, 15.0, 10.0], "color": [0.8, 0.8, 0.8], "name": "" },
+    { "position": [-10.0, 10.0, 5.0], "color": [0.3, 0.3, 0.3], "name": "" }
+  ],
   "materials": {
-    "chao": {
-      "color": [0.2, 0.5, 0.8],
-      "ka": [0.2, 0.5, 0.8],
+    "chao_cinza": {
+      "name": "chao_cinza",
+      "color": [0.6, 0.6, 0.6],
       "ks": [0.0, 0.0, 0.0],
-      "ns": 10
-    },
-        "material1": {
-      "color": [0.5, 0.2, 0.8],
-      "ka": [0.2, 0.5, 0.8],
-      "ks": [0.0, 0.0, 0.0],
-      "ns": 10
-    },
-        "material2": {
-      "color": [0.2, 0.5, 0],
-      "ka": [0.2, 0.5, 0.8],
-      "ks": [0.0, 0.0, 0.0],
-      "ns": 10
+      "ka": [0.6, 0.6, 0.6],
+      "kr": [0.0, 0.0, 0.0],
+      "kt": [0.0, 0.0, 0.0],
+      "ns": 1.0,
+      "ni": 1.0,
+      "d": 1.0
     }
   },
-
-  "camera": {
-    "lookfrom": [-2.34, 7.34, 56.87],
-    "lookat": [-1.30, 7.50, 29.35],
-    "upVector": [0, 1, 0],
-    "image_width": 600,
-    "image_height": 600,
-    "screen_distance": 1.0
-  },
-
   "objects": [
     {
+      "type": "cylinder",
+      "relativePos": [0.0, 0.0, 0.0],
+      "eixo": [0.0, 1.0, 0.0],
+      "radius": 0.5,
+      "height": 2.0,
+      "material": {
+        "color": [0.8, 0.1, 0.1],
+        "ka": [0.2, 0.0, 0.0],
+        "kd": [0.8, 0.1, 0.1],
+        "ks": [0.5, 0.5, 0.5],
+        "ns": 32.0
+      },
+      "transform": [
+        { "type": "scaling", "data": [8, 8, 8] },
+        { "type": "rotation", "angle": [0.0, 0.0, 1.5707963] },
+        { "type": "translation", "data": [1.0, 1, -1.0] }
+      ]
+    },
+    {
       "type": "plane",
-      "point_on_plane": [0, 0, 0],
-      "normal": [0, 1, 0],
-      "material": "chao"
-    },
-    {
-      "type": "mesh",
-      "relativePos": [0.0000, 5.0000, 0.0000],
-      "material": "material1",
-      "path": "./utils/input/cubo.obj",
-      "transform": [
-          { "type": "scaling", "factors": [10, 10, 10] },
-          { "type": "rotation", "angle": [0, 0, 0] },
-          { "type": "translation", "vector": [0, 10, 0] }
-      ]
-    },
-    {
-      "type": "mesh",
-      "relativePos": [0.0000, 5.0000, 0.0000],
-      "material": "material2",
-      "path": "./utils/input/macaco.obj",
-      "transform": [
-          { "type": "scaling", "factors": [5, 5, 5] },
-          { "type": "rotation", "angle": [0, 0, 0] },
-          { "type": "translation", "vector": [0, 10, 0] }
-      ]
+      "relativePos": [0.0, -2.0, 0.0],
+      "normal": [0.0, 1.0, 0.0],
+      "material": {
+        "color": [0.6, 0.6, 0.6],
+        "ka": [0.2, 0.2, 0.2],
+        "kd": [0.6, 0.6, 0.6],
+        "ks": [0.0, 0.0, 0.0],
+        "ns": 1.0
+      }
     }
   ]
 }
