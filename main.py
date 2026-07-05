@@ -619,7 +619,7 @@ def trace_ray(ray_origin, ray_dir, scene_data, intersect_func, depth=0):
         cos_i = -ray_dir.dot(N)
         sin2_t = (razao ** 2) * (1.0 - cos_i ** 2)
         
-        # Se sin2_t > 1.0, ocorreu Reflexão Interna Total (TIR). Pulamos a refração!
+        #Se sin2_t > 1.0, ocorreu Reflexão Interna Total (TIR). Pulamos a refração!
         if sin2_t <= 1.0:
             cos_t = np.sqrt(1.0 - sin2_t)
             

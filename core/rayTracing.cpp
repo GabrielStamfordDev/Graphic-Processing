@@ -99,22 +99,22 @@ void Trace(const CenaProcessada& dados, const Camera& cam, const SceneData& scen
         for(int i = 0; i < cam.hres; i++){
             int pixel_index = j * cam.hres + i;
             std::array<double, 3> cor_acumulada = {0.0, 0.0, 0.0};
-            for(int sy = 0; sy < 2; sy++){
-                for(int sx = 0; sx < 2; sx++){
-                    Vetor ray = cam.getRayDirection((double)i + 0.5*sx, (double)j + 0.5*sy);
+            //for(int sy = 0; sy < 2; sy++){
+            //    for(int sx = 0; sx < 2; sx++){
+                    Vetor ray = cam.getRayDirection((double)i, (double)j);
                     auto c = RayTracer(ray, CameraPos, 1);
                     cor_acumulada[0] += c[0];
                     cor_acumulada[1] += c[1];
                     cor_acumulada[2] += c[2];
-                }
-            }
-            cor_acumulada[0] /= 4.0; cor_acumulada[0] = tonemap(cor_acumulada[0]);
-            cor_acumulada[1] /= 4.0; cor_acumulada[1] = tonemap(cor_acumulada[1]);
-            cor_acumulada[2] /= 4.0; cor_acumulada[2] = tonemap(cor_acumulada[2]);
+            //    }
+            //}
+            //cor_acumulada[0] /= 4.0; cor_acumulada[0] = tonemap(cor_acumulada[0]);
+            //cor_acumulada[1] /= 4.0; cor_acumulada[1] = tonemap(cor_acumulada[1]);
+            //cor_acumulada[2] /= 4.0; cor_acumulada[2] = tonemap(cor_acumulada[2]);
             image_buffer[pixel_index] = {
-                (int)(255.999 * cor_acumulada[0]),
-                (int)(255.999 * cor_acumulada[1]),
-                (int)(255.999 * cor_acumulada[2])
+                min(255,(int)(255.999 * cor_acumulada[0])),
+                min(255,(int)(255.999 * cor_acumulada[1])),
+                min(255,(int)(255.999 * cor_acumulada[2]))
             };
         }
     }
