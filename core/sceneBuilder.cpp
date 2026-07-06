@@ -1,6 +1,7 @@
 #include "sceneBuilder.h"
 #include "../utils/MeshReader/ObjReader.h"
 #include "transformacoes.h"
+#include "octree.h" // 🚀 Árvore de subdivisão espacial incluída!
 #include <iostream>
 #include <filesystem>
 #include <cmath>
@@ -74,6 +75,19 @@ namespace {
         objeto.aabb_min = minimo - Vetor(folga, folga, folga);
         objeto.aabb_max = maximo + Vetor(folga, folga, folga);
         objeto.has_aabb = true;
+
+        // 🚀 Construção automática da árvore aceleradora para a Mesh carregada
+        if (!objeto.mesh_v0.empty()) {
+            std::vector<size_t> indices(objeto.mesh_v0.size());
+            for (size_t i = 0; i < indices.size(); ++i) {
+                indices[i] = i;
+            }
+            // Instancia a árvore passando a caixa que acabamos de calcular
+            objeto.mesh_tree = new MeshOctreeNode(objeto, indices, objeto.aabb_min, objeto.aabb_max, 0);
+            
+            std::clog << "[Octree] Estrutura hierarquica gerada: " 
+                      << indices.size() << " triangulos indexados.\n";
+        }
     }
 
     void material(ObjectData& objeto, std::vector<FaceData>& faces_data){
@@ -97,21 +111,17 @@ namespace {
         }
     }
 
-    // Calcula dinamicamente as escalas do raio e da altura para qualquer orientação de eixo inicial
     std::pair<double, double> calcular_escala_cilindro_cone(const Matriz4x4& M_Transform, const Vetor& eixo_base) {
-        // Extrai a escala pura embutida nas colunas da matriz
         double sx = std::sqrt(M_Transform[0][0]*M_Transform[0][0] + M_Transform[1][0]*M_Transform[1][0] + M_Transform[2][0]*M_Transform[2][0]);
         double sy = std::sqrt(M_Transform[0][1]*M_Transform[0][1] + M_Transform[1][1]*M_Transform[1][1] + M_Transform[2][1]*M_Transform[2][1]);
         double sz = std::sqrt(M_Transform[0][2]*M_Transform[0][2] + M_Transform[1][2]*M_Transform[1][2] + M_Transform[2][2]*M_Transform[2][2]);
 
-        // Projeta os pesos do eixo inicial nas componentes de escala linear
         double s_altura = std::sqrt(
             (eixo_base.getX() * eixo_base.getX() * sx * sx) +
             (eixo_base.getY() * eixo_base.getY() * sy * sy) +
             (eixo_base.getZ() * eixo_base.getZ() * sz * sz)
         );
 
-        // Deduz a escala média perpendicular (raio) usando invariância de volume (determinante)
         double volume = sx * sy * sz;
         double s_raio = std::sqrt(volume / (s_altura > 1e-6 ? s_altura : 1.0));
 
@@ -132,7 +142,12 @@ CenaProcessada prepararObjetos(const std::vector<ObjectData>& raw_objects, bool 
                 cerr<<"Aviso! OBJ nao encontrado: "<<obj_path<<" ignorando Objeto\n";
                 continue;
             }
-            Resultado.loaded_meshes[obj_path] = make_unique<objReader>(obj_path);
+            
+            // 🛠️ CORREÇÃO: Evita recriar o leitor se o arquivo .obj já foi lido antes para outro objeto da cena
+            if (Resultado.loaded_meshes.count(obj_path) == 0) {
+                Resultado.loaded_meshes[obj_path] = make_unique<objReader>(obj_path);
+            }
+            
             objReader& mesh_reader = *Resultado.loaded_meshes[obj_path];
             auto faces = mesh_reader.getFacePoints();
             if(faces.empty()){
@@ -169,7 +184,6 @@ CenaProcessada prepararObjetos(const std::vector<ObjectData>& raw_objects, bool 
                 Matriz4x4 M_Rot = extrair_apenas_rotacao(M_Transform);
                 objeto.vetorPointData["eixo"] = aplicar_matriz_vetor(M_Rot, eixo_base).normalize();
                 
-                // Extração dinâmica e robusta de escala para qualquer eixo arbitrário
                 auto [s_raio, s_altura] = calcular_escala_cilindro_cone(M_Transform, eixo_base);
                 objeto.numericData.at("radius") *= s_raio;
                 objeto.numericData.at("height") *= s_altura;
@@ -187,7 +201,6 @@ CenaProcessada prepararObjetos(const std::vector<ObjectData>& raw_objects, bool 
                 Matriz4x4 M_Rot = extrair_apenas_rotacao(M_Transform);
                 objeto.vetorPointData["eixo"] = aplicar_matriz_vetor(M_Rot, eixo_base).normalize();
                 
-                // Extração dinâmica e robusta de escala para qualquer eixo arbitrário
                 auto [s_raio, s_altura] = calcular_escala_cilindro_cone(M_Transform, eixo_base);
                 objeto.numericData.at("radius") *= s_raio;
                 objeto.numericData.at("height") *= s_altura;

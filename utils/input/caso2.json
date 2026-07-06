@@ -40,7 +40,6 @@
         "ns": 32.0
       },
       "transform": [
-        { "type": "scaling", "data": [8, 8, 8] },
         { "type": "rotation", "angle": [0.0, 0.0, 1.5707963] },
         { "type": "translation", "data": [1.0, 1, -1.0] }
       ]

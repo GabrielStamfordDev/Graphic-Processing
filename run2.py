@@ -1,6 +1,7 @@
 import subprocess
 import sys
 import os
+import time
 
 SCENE_DEFAULT = "utils/input/sampleScene.json"
 
@@ -41,15 +42,25 @@ def resolve_scene():
 
 
 def render(scene, output_ppm, use_cpp=False):
-    print(f"Renderizando (com transformações) -> {output_ppm}")
+    modo = "C++ (main.exe)" if use_cpp else "Python (main.py)"
+    print(f"Renderizando ({modo}) -> {output_ppm}")
 
     if use_cpp:
         cmd = ["main.exe", scene]
     else:
         cmd = [sys.executable, "main.py", scene]
 
+    # Inicia a contagem do tempo antes de disparar o processo
+    inicio = time.perf_counter()
+
     with open(output_ppm, "w") as f:
         subprocess.run(cmd, stdout=f, stderr=sys.stderr)
+
+    # Finaliza a contagem após o término do processo
+    fim = time.perf_counter()
+    tempo_gasto = fim - inicio
+
+    print(f"⏱️  Tempo de renderização: {tempo_gasto:.4f} segundos.\n")
 
 
 def convert(Image, input_ppm, output_png):

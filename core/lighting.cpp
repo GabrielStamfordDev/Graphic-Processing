@@ -44,42 +44,34 @@ std::array<double, 3> calcular_cor_phong(
     double cor_b = mat.ka.b * Ia.b;
 
     for (const auto& luz : LightList) {
-        Vetor vetor_luz = luz.pos - P;
-        double distancia_luz = vetor_luz.magnitude();
-        Vetor L = vetor_luz.normalize();
+    Vetor vetor_luz = luz.pos - P;
+    double distancia_luz = vetor_luz.magnitude();
+    Vetor L = vetor_luz.normalize();
 
-        // Atenuação simples: 1.0 / (1.0 + 0.1 * distancia)
-        // Isso evita o estouro de luz sem adicionar novas dependências complexas
-        double atenuacao = 1.0 / (1.0 + 0.1 * distancia_luz);
 
-        double L_dot_N = N.dot(L);
-        if (L_dot_N <= 0.0) continue;
+    double L_dot_N = N.dot(L);
+    if (L_dot_N <= 0.0) continue;
 
-        Ponto P_sombra = P + (N * EPSILON);
-        if (checar_sombra(P_sombra, L, distancia_luz, valid_objects, intersect_func)) {
-            continue;
-        }
-
-        // Difuso com atenuação
-        cor_r += mat.color.r * L_dot_N * luz.color.r * atenuacao;
-        cor_g += mat.color.g * L_dot_N * luz.color.g * atenuacao;
-        cor_b += mat.color.b * L_dot_N * luz.color.b * atenuacao;
-
-        // Especular com atenuação
-        Vetor R = ((N * (2.0 * L_dot_N)) - L).normalize();
-        double R_dot_V = R.dot(V);
-
-        if (R_dot_V > 0.0) {
-            double spec = std::pow(R_dot_V, mat.ns);
-            cor_r += mat.ks.r * spec * luz.color.r * atenuacao;
-            cor_g += mat.ks.g * spec * luz.color.g * atenuacao;
-            cor_b += mat.ks.b * spec * luz.color.b * atenuacao;
-        }
+    Ponto P_sombra = P + (N * EPSILON);
+    if (checar_sombra(P_sombra, L, distancia_luz, valid_objects, intersect_func)) {
+        continue;
     }
 
-    cor_r = std::clamp(cor_r, 0.0, 1.0);
-    cor_g = std::clamp(cor_g, 0.0, 1.0);
-    cor_b = std::clamp(cor_b, 0.0, 1.0);
+    // Difuso Puro (Sem atenuação)
+    cor_r += mat.color.r * L_dot_N * luz.color.r;
+    cor_g += mat.color.g * L_dot_N * luz.color.g;
+    cor_b += mat.color.b * L_dot_N * luz.color.b;
 
+    // Especular Puro (Sem atenuação)
+    Vetor R = ((N * (2.0 * L_dot_N)) - L).normalize();
+    double R_dot_V = R.dot(V);
+
+    if (R_dot_V > 0.0) {
+        double spec = std::pow(R_dot_V, mat.ns);
+        cor_r += mat.ks.r * spec * luz.color.r;
+        cor_g += mat.ks.g * spec * luz.color.g;
+        cor_b += mat.ks.b * spec * luz.color.b;
+    }
+}
     return {cor_r, cor_g, cor_b};
 }

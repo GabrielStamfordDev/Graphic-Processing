@@ -232,7 +232,9 @@ Matriz4x4 build_transform_matriz(const vector<TransformData>& transforma,const P
         M_total = M_atual * M_total;
     }
 
-    if(tipo == "mesh"){
+    // Para meshes SEM transformações, aplica relativePos como translação inicial
+    // Se houver transformações, relativePos já foi incorporado no array de transforms
+    if(tipo == "mesh" && transforma.empty()){
         Mp = matriz_translacao(relativePos.getX(),relativePos.getY(),relativePos.getZ());
         M_total = Mp * M_total;
     }

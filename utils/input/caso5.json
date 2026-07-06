@@ -1,139 +1,80 @@
 {
   "camera": {
-    "lookfrom": [0.0, 2.5, 10.0],
+    "lookfrom": [8.0, 5.0, 12.0],
     "lookat": [0.0, 1.0, 0.0],
     "upVector": [0.0, 1.0, 0.0],
-    "image_width": 1280,
-    "image_height": 720,
-    "screen_distance": 0.75
+    "image_width": 1024,
+    "image_height": 768,
+    "screen_distance": 0.5
   },
-
-  "globalLight": [0.02, 0.02, 0.02],
-
+  "globalLight": [0.1, 0.1, 0.1],
   "lights": [
     {
-      "position": [0.0, 5.0, 0.0],
-      "color": [1.0, 1.0, 1.0],
-      "name": "luz_teto_branca"
+      "position": [10.0, 10.0, 10.0],
+      "color": [0.8, 0.8, 0.7],
+      "name": "luz_principal"
+    },
+    {
+      "position": [-10.0, 8.0, -5.0],
+      "color": [0.3, 0.3, 0.5],
+      "name": "luz_fill"
     }
   ],
-
   "materials": {
-    "parede_vermelha": {
-      "name": "parede_vermelha",
-      "color": [0.8, 0.1, 0.1],
-      "ka": [0.05, 0, 0],
-      "ks": [0, 0, 0],
-      "kr": [0, 0, 0],
-      "kt": [0, 0, 0],
-      "ns": 1
+    "parede_espelhada": {
+      "color": [0.1, 0.1, 0.1],
+      "ks": [1.0, 1.0, 1.0],
+      "ka": [0.0, 0.0, 0.0],
+      "kr": [0.9, 0.9, 0.9],
+      "kt": [0.0, 0.0, 0.0],
+      "ns": 500.0,
+      "ni": 1.0,
+      "d": 1.0
     },
-    "parede_verde": {
-      "name": "parede_verde",
-      "color": [0.1, 0.8, 0.1],
-      "ka": [0, 0.05, 0],
-      "ks": [0, 0, 0],
-      "kr": [0, 0, 0],
-      "kt": [0, 0, 0],
-      "ns": 1
+    "cubo_ouro": {
+      "color": [0.9, 0.7, 0.2],
+      "ks": [1.0, 0.9, 0.5],
+      "ka": [0.2, 0.1, 0.0],
+      "kr": [0.4, 0.3, 0.1],
+      "kt": [0.0, 0.0, 0.0],
+      "ns": 100.0,
+      "ni": 1.0,
+      "d": 1.0
     },
-    "parede_azul": {
-      "name": "parede_azul",
-      "color": [0.1, 0.1, 0.8],
-      "ka": [0, 0, 0.05],
-      "ks": [0, 0, 0],
-      "kr": [0, 0, 0],
-      "kt": [0, 0, 0],
-      "ns": 1
-    },
-    "parede_amarela": {
-      "name": "parede_amarela",
-      "color": [0.8, 0.8, 0.1],
-      "ka": [0.05, 0.05, 0],
-      "ks": [0, 0, 0],
-      "kr": [0, 0, 0],
-      "kt": [0, 0, 0],
-      "ns": 1
-    },
-    "chao_neutro": {
-      "name": "chao_neutro",
-      "color": [0.7, 0.7, 0.7],
+    "macaco_vidro": {
+      "color": [0.9, 0.9, 1.0],
+      "ks": [0.5, 0.5, 0.5],
       "ka": [0.1, 0.1, 0.1],
-      "ks": [0.1, 0.1, 0.1],
       "kr": [0.2, 0.2, 0.2],
-      "kt": [0, 0, 0],
-      "ns": 32
-    },
-    "vidro_esfera": {
-      "name": "vidro_esfera",
-      "color": [0, 0, 0],
-      "ka": [0, 0, 0],
-      "ks": [0.2, 0.2, 0.2],
-      "kr": [0.1, 0.1, 0.1],
-      "kt": [0.9, 0.9, 0.9],
-      "ns": 300,
-      "ni": 1.52
+      "kt": [0.8, 0.8, 0.8],
+      "ns": 200.0,
+      "ni": 1.5,
+      "d": 0.3
     }
   },
-
   "objects": [
     {
       "type": "plane",
       "relativePos": [0, -1, 0],
       "normal": [0, 1, 0],
-      "material": "chao_neutro"
+      "material": "parede_espelhada"
     },
     {
-      "type": "plane",
-      "relativePos": [0, 8, 0],
-      "normal": [0, -1, 0],
-      "material": "parede_amarela"
+      "type": "mesh",
+      "relativePos": [0, 0, 0],
+      "material": "macaco_vidro",
+      "path": "utils/input/monkey.obj",
+      "transform": [
+        { "type": "scaling", "factors": [1.5, 1.5, 1.5] },
+        { "type": "rotation", "angle": [0, 1.57, 0] }
+      ]
     },
     {
-      "type": "plane",
-      "relativePos": [-5, 0, 0],
-      "normal": [1, 0, 0],
-      "material": "parede_vermelha"
-    },
-    {
-      "type": "plane",
-      "relativePos": [5, 0, 0],
-      "normal": [-1, 0, 0],
-      "material": "parede_verde"
-    },
-    {
-      "type": "plane",
-      "relativePos": [0, 0, -6],
-      "normal": [0, 0, 1],
-      "material": "parede_azul"
-    },
-    {
-      "type": "sphere",
-      "relativePos": [0.0, 1.2, 0.0],
-      "radius": 1.0,
-      "material": "vidro_esfera",
-      "transform": [{ "type": "scaling", "data": [1.0, 1.2, 1.0] }]
-    },
-    {
-      "type": "sphere",
-      "relativePos": [-2.0, 1.0, -2.0],
-      "radius": 0.8,
-      "material": "vidro_esfera",
-      "transform": []
-    },
-    {
-      "type": "cylinder",
-      "relativePos": [2.0, 0.5, -1.5],
-      "radius": 0.5,
-      "height": 2.0,
-      "material": "vidro_esfera"
-    },
-    {
-      "type": "cone",
-      "relativePos": [-2.5, 0.5, 2.0],
-      "radius": 0.7,
-      "height": 2.0,
-      "material": "vidro_esfera"
+      "type": "mesh",
+      "relativePos": [3, 0, -2],
+      "material": "cubo_ouro",
+      "path": "utils/input/cubo.obj",
+      "transform": [{ "type": "rotation", "angle": [0.5, 0, 0.5] }]
     }
   ]
 }

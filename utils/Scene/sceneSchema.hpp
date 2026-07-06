@@ -78,6 +78,7 @@ struct ObjectData {
     bool has_aabb = false;
     Ponto aabb_min;
     Ponto aabb_max;
+    class MeshOctreeNode* mesh_tree = nullptr;  // Forward decl: acelerador de mesh
 
     double  getNum     (string key){ return numericData[key]; }
     int64_t getInt     (string key){ return (int64_t)numericData[key]; }

@@ -45,6 +45,17 @@ public:
     bool operator!=(const Ponto& p) const {
         return !(*this == p);
     }
+    // Função auxiliar de deslocamento que respeita sua estrutura atual
+    Ponto deslocarPonto(const Ponto& p, double valor) {
+        // Como você já tem Vetor(x, y, z), usamos ele como intermediário
+        // Ponto + Vetor = Ponto (isso você JÁ tem implementado)
+        return p + Vetor(valor, valor, valor);
+    }
+
+    Ponto subtrairDeslocamento(const Ponto& p, double valor) {
+        // Ponto - Vetor = Ponto (isso você JÁ tem implementado)
+        return p - Vetor(valor, valor, valor);
+    }
 
     // impressão
     friend std::ostream& operator<<(std::ostream& os, const Ponto& p) {

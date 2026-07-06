@@ -1,75 +1,101 @@
 #pragma once
+
 #include <cmath>
 #include <limits>
 #include <tuple>
+#include <algorithm>
+#include <vector>
+
+// Assumindo que estes arquivos existam e estejam nos caminhos corretos
 #include "../src/Ponto.h"
 #include "../src/Vetor.h"
 #include "hitResult.h"
-#include "../utils/scene/sceneSchema.hpp" 
+#include "../utils/scene/sceneSchema.hpp"
+#include "octree.h"
+// Forward declarations para evitar dependência circular
+class OctreeNode;
+struct ObjectData;
+struct HitResult;
 
-double infinity(){
-    return std::numeric_limits<double>::infinity();
-}
-
-namespace{
+namespace {
     constexpr double kEpsilon = 1e-8;
     constexpr double kMinT = 0.001;
+    // Constante para infinito para evitar erros de declaração
+    constexpr double INF = std::numeric_limits<double>::infinity();
 }
 
-bool intersect_aabb(const Ponto& ray_origin, const Vetor& ray_dir, const Ponto& aabb_min, const Ponto& aabb_max) {
-    double tx1 = (aabb_min.getX() - ray_origin.getX()) / ray_dir.getX();
-    double tx2 = (aabb_max.getX() - ray_origin.getX()) / ray_dir.getX();
-    double tmin = std::min(tx1, tx2);
-    double tmax = std::max(tx1, tx2);
+inline bool intersect_aabb(const Ponto& ray_origin, const Vetor& ray_dir, const Ponto& aabb_min, const Ponto& aabb_max) {
+    double tmin = -INF;
+    double tmax = INF;
 
-    double ty1 = (aabb_min.getY() - ray_origin.getY()) / ray_dir.getY();
-    double ty2 = (aabb_max.getY() - ray_origin.getY()) / ray_dir.getY();
-    tmin = std::max(tmin, std::min(ty1, ty2));
-    tmax = std::min(tmax, std::max(ty1, ty2));
+    // Eixo X
+    if (std::abs(ray_dir.getX()) > 1e-9) {
+        double t1 = (aabb_min.getX() - ray_origin.getX()) / ray_dir.getX();
+        double t2 = (aabb_max.getX() - ray_origin.getX()) / ray_dir.getX();
+        tmin = std::max(tmin, std::min(t1, t2));
+        tmax = std::min(tmax, std::max(t1, t2));
+    } else if (ray_origin.getX() < aabb_min.getX() || ray_origin.getX() > aabb_max.getX()) {
+        return false;
+    }
 
-    double tz1 = (aabb_min.getZ() - ray_origin.getZ()) / ray_dir.getZ();
-    double tz2 = (aabb_max.getZ() - ray_origin.getZ()) / ray_dir.getZ();
-    tmin = std::max(tmin, std::min(tz1, tz2));
-    tmax = std::min(tmax, std::max(tz1, tz2));
+    // Eixo Y
+    if (std::abs(ray_dir.getY()) > 1e-9) {
+        double t1 = (aabb_min.getY() - ray_origin.getY()) / ray_dir.getY();
+        double t2 = (aabb_max.getY() - ray_origin.getY()) / ray_dir.getY();
+        tmin = std::max(tmin, std::min(t1, t2));
+        tmax = std::min(tmax, std::max(t1, t2));
+    } else if (ray_origin.getY() < aabb_min.getY() || ray_origin.getY() > aabb_max.getY()) {
+        return false;
+    }
 
-    return tmax >= tmin && tmax > 0.0;
+    // Eixo Z
+    if (std::abs(ray_dir.getZ()) > 1e-9) {
+        double t1 = (aabb_min.getZ() - ray_origin.getZ()) / ray_dir.getZ();
+        double t2 = (aabb_max.getZ() - ray_origin.getZ()) / ray_dir.getZ();
+        tmin = std::max(tmin, std::min(t1, t2));
+        tmax = std::min(tmax, std::max(t1, t2));
+    } else if (ray_origin.getZ() < aabb_min.getZ() || ray_origin.getZ() > aabb_max.getZ()) {
+        return false;
+    }
+
+    return tmax >= std::max(0.0, tmin);
 }
 
-std::pair<double, Vetor> intersect_sphere(const Ponto& origem, const Vetor& direcao, const Ponto& centro, double raio){
+inline std::pair<double, Vetor> intersect_sphere(const Ponto& origem, const Vetor& direcao, const Ponto& centro, double raio) {
     Vetor v = origem - centro;
     double v_dot_d = v.dot(direcao);
     double v_dot_v = v.dot(v);
     double r2 = raio * raio;
     double discriminant = (v_dot_d * v_dot_d) - (v_dot_v - r2);
-    if(discriminant < 0.0) return {infinity(), Vetor()};
+    if (discriminant < 0.0) return {INF, Vetor()};
 
     double sqrt_disc = std::sqrt(discriminant);
     double t1 = -v_dot_d - sqrt_disc;
     double t2 = -v_dot_d + sqrt_disc;
-    double t = infinity();
-    
-    if(t1 > kMinT) t = t1;
-    else if(t2 > kMinT) t = t2;
-    
-    if(t == infinity()) return {infinity(), Vetor()};
+    double t = INF;
+
+    if (t1 > kMinT) t = t1;
+    else if (t2 > kMinT) t = t2;
+
+    if (t == INF) return {INF, Vetor()};
 
     Ponto P = origem + (direcao * t);
     Vetor normal = (P - centro).normalize();
     return {t, normal};
 }
 
-std::pair<double, Vetor> intersect_plane(const Ponto& origem, const Vetor& direcao, const Ponto& p0, const Vetor& normal) {
+inline std::pair<double, Vetor> intersect_plane(const Ponto& origem, const Vetor& direcao, const Ponto& p0, const Vetor& normal) {
     double denom = direcao.dot(normal);
-    if(std::abs(denom) > 1e-6){
+    if (std::abs(denom) > 1e-6) {
         Vetor p0_origem = p0 - origem;
-        double t = p0_origem.dot(normal)/denom;
-        if(t > kMinT) return {t, normal};
+        double t = p0_origem.dot(normal) / denom;
+        if (t > kMinT) return {t, normal};
     }
-    return {infinity(), Vetor()};
+    return {INF, Vetor()};
 }
 
-std::pair<double, Vetor> intersect_cylinder(const Ponto& origem, const Vetor& direcao, const Ponto& centro, const Vetor& eixo, double raio, double altura) {
-    double closest_t = infinity();
+inline std::pair<double, Vetor> intersect_cylinder(const Ponto& origem, const Vetor& direcao, const Ponto& centro, const Vetor& eixo, double raio, double altura) {
+    double closest_t = INF;
     Vetor normal_hit;
 
     Vetor D = direcao;
@@ -79,7 +105,6 @@ std::pair<double, Vetor> intersect_cylinder(const Ponto& origem, const Vetor& di
     double D_dot_V = D.dot(V);
     double X_dot_V = X.dot(V);
 
-    // 1. Corpo lateral cilindro genérico orientado por V
     double a = D.dot(D) - (D_dot_V * D_dot_V);
     double b = 2.0 * (D.dot(X) - (D_dot_V * X_dot_V));
     double c = X.dot(X) - (X_dot_V * X_dot_V) - (raio * raio);
@@ -105,8 +130,6 @@ std::pair<double, Vetor> intersect_cylinder(const Ponto& origem, const Vetor& di
         }
     }
 
-    // 2. Tampas planas orientadas perpendicularmente a V
-    // Tampa de baixo (plano passando por centro com normal -V)
     double denom = D.dot(V);
     if (std::abs(denom) > 1e-6) {
         double t_inf = -X.dot(V) / denom;
@@ -118,8 +141,6 @@ std::pair<double, Vetor> intersect_cylinder(const Ponto& origem, const Vetor& di
                 normal_hit = V * -1.0;
             }
         }
-
-        // Tampa de cima (plano passando por centro + V*altura com normal V)
         Ponto centro_superior = centro + (V * altura);
         double t_sup = (centro_superior - origem).dot(V) / denom;
         if (t_sup > kMinT && t_sup < closest_t) {
@@ -135,8 +156,8 @@ std::pair<double, Vetor> intersect_cylinder(const Ponto& origem, const Vetor& di
     return {closest_t, normal_hit};
 }
 
-std::pair<double, Vetor> intersect_cone(const Ponto& origem, const Vetor& direcao, const Ponto& centro, const Vetor& eixo, double raio, double altura) {
-    double closest_t = infinity();
+inline std::pair<double, Vetor> intersect_cone(const Ponto& origem, const Vetor& direcao, const Ponto& centro, const Vetor& eixo, double raio, double altura) {
+    double closest_t = INF;
     Vetor normal_hit;
 
     Vetor D = direcao;
@@ -145,11 +166,9 @@ std::pair<double, Vetor> intersect_cone(const Ponto& origem, const Vetor& direca
     Vetor X = origem - A_apex;
 
     double cos_sq_theta = (altura * altura) / (raio * raio + altura * altura);
-
     double D_dot_V = D.dot(V);
     double X_dot_V = X.dot(V);
 
-    // 1. Corpo cônico genérico
     double a = (D_dot_V * D_dot_V) - D.dot(D) * cos_sq_theta;
     double b = 2.0 * ((D_dot_V * X_dot_V) - D.dot(X) * cos_sq_theta);
     double c = (X_dot_V * X_dot_V) - X.dot(X) * cos_sq_theta;
@@ -176,7 +195,6 @@ std::pair<double, Vetor> intersect_cone(const Ponto& origem, const Vetor& direca
         }
     }
 
-    // 2. Base do Cone plana (plano passando por centro com normal -V)
     double denom = D.dot(V);
     if (std::abs(denom) > 1e-6) {
         double t_base = (centro - origem).dot(V) / denom;
@@ -189,113 +207,147 @@ std::pair<double, Vetor> intersect_cone(const Ponto& origem, const Vetor& direca
             }
         }
     }
-
     return {closest_t, normal_hit};
 }
 
-std::tuple<double, double, double> intersect_triangle_uvt(const Ponto& origem, const Vetor& direcao, const Ponto& v0, const Ponto& v1, const Ponto& v2){
+inline std::tuple<double, double, double> intersect_triangle_uvt(const Ponto& origem, const Vetor& direcao, const Ponto& v0, const Ponto& v1, const Ponto& v2) {
     Vetor aresta1 = v1 - v0;
     Vetor aresta2 = v2 - v0;
     Vetor h = direcao.cross(aresta2);
     double a = aresta1.dot(h);
-    if(std::abs(a) < kEpsilon) return {infinity(), 0.0, 0.0};
 
-    double det = 1.0 / a;
+    if (std::abs(a) < kEpsilon) return {INF, 0.0, 0.0};
+
     Vetor s = origem - v0;
-    double alfa = det * s.dot(h);
-    if(alfa < 0.0 || alfa > 1.0) return {infinity(), 0.0, 0.0};
+    double alfa = s.dot(h);
+
+    if (a > 0.0) { if (alfa < 0.0 || alfa > a) return {INF, 0.0, 0.0}; }
+    else { if (alfa > 0.0 || alfa < a) return {INF, 0.0, 0.0}; }
 
     Vetor q = s.cross(aresta1);
-    double beta = det * direcao.dot(q);
-    if(beta < 0.0 || (alfa + beta) > 1.0) return {infinity(), 0.0, 0.0};
+    double beta = direcao.dot(q);
 
+    if (a > 0.0) { if (beta < 0.0 || (alfa + beta) > a) return {INF, 0.0, 0.0}; }
+    else { if (beta > 0.0 || (alfa + beta) < a) return {INF, 0.0, 0.0}; }
+
+    double det = 1.0 / a;
     double t = det * aresta2.dot(q);
-    if(t > kMinT) return {t, alfa, beta};
+    if (t > kMinT) return {t, alfa * det, beta * det};
 
-    return {infinity(), 0.0, 0.0};
+    return {INF, 0.0, 0.0};
 }
 
-double intersect_triangle(const Ponto& origem, const Vetor& direcao, const Ponto& v0, const Ponto& v1, const Ponto& v2) {
+inline double intersect_triangle(const Ponto& origem, const Vetor& direcao, const Ponto& v0, const Ponto& v1, const Ponto& v2) {
     Vetor aresta1 = v1 - v0;
     Vetor aresta2 = v2 - v0;
     Vetor h = direcao.cross(aresta2);
     double a = aresta1.dot(h);
-    if(std::abs(a) < kEpsilon) return infinity();
+    if (std::abs(a) < kEpsilon) return INF;
 
     double det = 1.0 / a;
     Vetor s = origem - v0;
     double alfa = det * s.dot(h);
-    if(alfa < 0.0 || alfa > 1.0) return infinity();
+    if (alfa < 0.0 || alfa > 1.0) return INF;
 
     Vetor q = s.cross(aresta1);
     double beta = det * direcao.dot(q);
-    if(beta < 0.0 || (alfa + beta) > 1.0) return infinity();
+    if (beta < 0.0 || (alfa + beta) > 1.0) return INF;
 
     double t = det * aresta2.dot(q);
-    if(t > kMinT) return t;
+    if (t > kMinT) return t;
 
-    return infinity();
+    return INF;
 }
 
-HitResult intersect_object(const ObjectData& obj, const Ponto& ray_origin, const Vetor& ray_dir){
-    if(obj.objType == "sphere"){
+inline HitResult intersect_object(const ObjectData& obj, const Ponto& ray_origin, const Vetor& ray_dir) {
+    if (obj.objType == "sphere") {
         double raio = obj.numericData.at("radius");
         auto [t, normal] = intersect_sphere(ray_origin, ray_dir, obj.relativePos, raio);
-        return {t, normal};
+        return {t, normal, &obj};
     }
-
-    if(obj.objType == "plane"){
+    if (obj.objType == "plane") {
         Vetor normal = obj.vetorPointData.at("normal").normalize();
-        auto [t, n]  = intersect_plane(ray_origin, ray_dir, obj.relativePos, normal);
-        return {t, n};
+        auto [t, n] = intersect_plane(ray_origin, ray_dir, obj.relativePos, normal);
+        return {t, n, &obj};
     }
-
-    if(obj.objType == "cylinder"){
+    if (obj.objType == "cylinder") {
         double raio = obj.numericData.at("radius");
         double altura = obj.numericData.at("height");
         Vetor eixo = obj.vetorPointData.at("eixo");
         auto [t, normal] = intersect_cylinder(ray_origin, ray_dir, obj.relativePos, eixo, raio, altura);
-        return {t, normal};
+        return {t, normal, &obj};
     }
-
-    if(obj.objType == "cone"){
+    if (obj.objType == "cone") {
         double raio = obj.numericData.at("radius");
         double altura = obj.numericData.at("height");
         Vetor eixo = obj.vetorPointData.at("eixo");
         auto [t, normal] = intersect_cone(ray_origin, ray_dir, obj.relativePos, eixo, raio, altura);
-        return {t, normal};
+        return {t, normal, &obj};
     }
+    if (obj.objType == "mesh") {
+            if (obj.has_aabb) {
+                if (!intersect_aabb(ray_origin, ray_dir, obj.aabb_min, obj.aabb_max)) {
+                    return {INF, Vetor(), nullptr};
+                }
+            }
 
-    if(obj.objType == "mesh"){
-        if (obj.has_aabb) {
-            if (!intersect_aabb(ray_origin, ray_dir, obj.aabb_min, obj.aabb_max)) {
-                return {infinity(), Vetor()}; 
-            }
+            // DECLARAÇÃO DAS VARIÁVEIS QUE O COMPILADOR RECLAMOU
+            double closest_t = INF;
+            int hit_idx = -1;
+            double hit_u = 0.0, hit_v = 0.0;
+
+            if (obj.mesh_tree != nullptr) {
+                // Como MeshOctreeNode é uma forward declaration, 
+                // você precisa garantir que o compilador saiba o tipo.
+                // Se o arquivo octree.h já foi incluído, isto funcionará:
+                MeshOctreeNode* node = static_cast<MeshOctreeNode*>(obj.mesh_tree);
+                node->search_triangle(obj, ray_origin, ray_dir, closest_t, hit_idx, hit_u, hit_v);
+            } else {
+                // Fallback: busca linear (se não houver árvore)
+                for (size_t i = 0; i < obj.mesh_v0.size(); ++i) {
+                    auto [t, u, v] = intersect_triangle_uvt(ray_origin, ray_dir, obj.mesh_v0[i], obj.mesh_v1[i], obj.mesh_v2[i]);
+                    if (t > 1e-4 && t < closest_t) {
+                        closest_t = t;
+                        hit_idx = (int)i;
+                        hit_u = u;
+                        hit_v = v;
+                    }
+                }
         }
-        
-        double closest_t = infinity();
-        int    hit_idx   = -1;
-        double    hit_u = 0.0, hit_v = 0.0;
-        for(size_t i = 0; i < obj.mesh_v0.size(); ++i){
-            auto [t, u, v] = intersect_triangle_uvt(
-                ray_origin, ray_dir,
-                obj.mesh_v0[i], obj.mesh_v1[i], obj.mesh_v2[i]);
-            if(t > 1e-4 && t < closest_t){
-                closest_t = t;
-                hit_idx   = (int)i;
-                hit_u     = u;
-                hit_v     = v;
-            }
-        }
-        if(hit_idx >= 0){
+
+        // Agora o resto do código usa as variáveis que já declaramos acima
+        if (hit_idx >= 0) {
             const Vetor& n0 = obj.mesh_n0[hit_idx];
             const Vetor& n1 = obj.mesh_n1[hit_idx];
             const Vetor& n2 = obj.mesh_n2[hit_idx];
-            double peso_n0  = 1.0 - hit_u - hit_v;
-            Vetor  normal_interp = (n0 * peso_n0) + (n1 * hit_u) + (n2 * hit_v);
-            return {closest_t, normal_interp.normalize()};
+            double peso_n0 = 1.0 - hit_u - hit_v;
+            Vetor normal_interp = (n0 * peso_n0) + (n1 * hit_u) + (n2 * hit_v);
+            return {closest_t, normal_interp.normalize(), &obj};
         }
-        return {infinity(), Vetor()};
+        return {INF, Vetor(), nullptr};
     }
-    return {infinity(), Vetor()};
+    return {INF, Vetor(), nullptr};
+}
+
+inline std::pair<Ponto, Ponto> getBoundingBox(const ObjectData& obj) {
+    if (obj.objType == "sphere") {
+        double r = obj.numericData.at("radius");
+        double x = obj.relativePos.getX();
+        double y = obj.relativePos.getY();
+        double z = obj.relativePos.getZ();
+        return {Ponto(x - r, y - r, z - r), Ponto(x + r, y + r, z + r)};
+    }
+    if (obj.objType == "cylinder" || obj.objType == "cone") {
+        double r = obj.numericData.at("radius");
+        double h = obj.numericData.at("height");
+        double dim = std::max(r, h);
+        double x = obj.relativePos.getX();
+        double y = obj.relativePos.getY();
+        double z = obj.relativePos.getZ();
+        return {Ponto(x - dim, y - dim, z - dim), Ponto(x + dim, y + dim, z + dim)};
+    }
+    if (obj.objType == "mesh") {
+        return {obj.aabb_min, obj.aabb_max};
+    }
+    return {Ponto(-INF, -INF, -INF), Ponto(INF, INF, INF)};
 }

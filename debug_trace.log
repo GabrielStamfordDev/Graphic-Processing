@@ -1,0 +1,7 @@
+🔍 DEBUG: Renderizando com busca linear (sem octree)...
+📊 Total de objetos: 5
+  [0] plane
+  [1] mesh - triangles: 12, AABB: (-1.0001,8.9999,-1.0001) to (1.0001,11.0001,1.0001)
+  [2] sphere
+  [3] sphere
+  [4] mesh - triangles: 967, AABB: (-1.36729,-0.984475,-0.851662) to (1.36729,0.984475,0.851662)

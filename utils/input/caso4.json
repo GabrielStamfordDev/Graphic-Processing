@@ -1,76 +1,83 @@
 {
   "camera": {
-    "lookfrom": [0, 3, 8],
-    "lookat": [0, 0, 0],
-    "vup": [0, 1, 0],
-    "fov": 45,
-    "hres": 800,
-    "vres": 600
+    "lookfrom": [0.0, 4.0, 10.0],
+    "lookat": [0.0, 1.0, 0.0],
+    "upVector": [0.0, 1.0, 0.0],
+    "image_width": 1024,
+    "image_height": 768,
+    "screen_distance": 0.5
   },
-  "globalLight": {
-    "color": [0.1, 0.1, 0.1]
+  "globalLight": [0.1, 0.1, 0.1],
+  "lights": [
+    {
+      "position": [10.0, 10.0, 10.0],
+      "color": [0.8, 0.8, 0.7],
+      "name": "luz_principal"
+    },
+    {
+      "position": [-10.0, 8.0, -5.0],
+      "color": [0.3, 0.3, 0.5],
+      "name": "luz_fill"
+    }
+  ],
+  "materials": {
+    "esfera_espelho": {
+      "color": [0.05, 0.05, 0.05],
+      "ks": [1.0, 1.0, 1.0],
+      "ka": [0.0, 0.0, 0.0],
+      "kr": [0.9, 0.9, 0.9],
+      "kt": [0.0, 0.0, 0.0],
+      "ns": 500.0,
+      "ni": 1.0,
+      "d": 1.0
+    },
+    "cubo_ouro": {
+      "color": [0.9, 0.7, 0.2],
+      "ks": [1.0, 0.9, 0.5],
+      "ka": [0.2, 0.1, 0.0],
+      "kr": [0.4, 0.3, 0.1],
+      "kt": [0.0, 0.0, 0.0],
+      "ns": 100.0,
+      "ni": 1.0,
+      "d": 1.0
+    },
+    "macaco_vidro": {
+      "color": [0.9, 0.9, 1.0],
+      "ks": [0.5, 0.5, 0.5],
+      "ka": [0.1, 0.1, 0.1],
+      "kr": [0.2, 0.2, 0.2],
+      "kt": [0.8, 0.8, 0.8],
+      "ns": 200.0,
+      "ni": 1.5,
+      "d": 0.3
+    }
   },
-  "lights": [{ "position": [5, 10, 5], "color": [1, 1, 1] }],
   "objects": [
     {
       "type": "sphere",
-      "position": [-2, 0, 0],
-      "radius": 1.0,
-      "material": {
-        "ka": [0.1, 0.1, 0.1],
-        "color": [0.8, 0.2, 0.2],
-        "ks": [0.5, 0.5, 0.5],
-        "ns": 50,
-        "kr": [0.3, 0.3, 0.3],
-        "kt": [0, 0, 0],
-        "ni": 1.0
-      }
+      "relativePos": [-3.5, 0.5, -1.0],
+      "radius": 1.5,
+      "material": "esfera_espelho"
     },
     {
-      "type": "cylinder",
-      "position": [0, -1, 0],
-      "radius": 0.8,
-      "height": 2.0,
-      "eixo": [0, 1, 0],
-      "material": {
-        "ka": [0.1, 0.1, 0.1],
-        "color": [0.2, 0.8, 0.2],
-        "ks": [0.5, 0.5, 0.5],
-        "ns": 50,
-        "kr": [0, 0, 0],
-        "kt": [0, 0, 0],
-        "ni": 1.0
-      }
+      "type": "mesh",
+      "relativePos": [0.0, 1.0, 0.0],
+      "material": "macaco_vidro",
+      "path": "utils/input/monkey.obj",
+      "transform": [
+        { "type": "scaling", "factors": [1.5, 1.5, 1.5] },
+        { "type": "rotation", "angle": [0, 0.5, 0] }
+      ]
     },
     {
-      "type": "cone",
-      "position": [0, 1, 0],
-      "radius": 1.0,
-      "height": 1.5,
-      "eixo": [0, 1, 0],
-      "material": {
-        "ka": [0.1, 0.1, 0.1],
-        "color": [0.2, 0.2, 0.8],
-        "ks": [0.5, 0.5, 0.5],
-        "ns": 50,
-        "kr": [0.5, 0.5, 0.5],
-        "kt": [0, 0, 0],
-        "ni": 1.0
-      }
-    },
-    {
-      "type": "plane",
-      "position": [0, -1, 0],
-      "normal": [0, 1, 0],
-      "material": {
-        "ka": [0.1, 0.1, 0.1],
-        "color": [0.5, 0.5, 0.5],
-        "ks": [0.1, 0.1, 0.1],
-        "ns": 10,
-        "kr": [0.2, 0.2, 0.2],
-        "kt": [0, 0, 0],
-        "ni": 1.0
-      }
+      "type": "mesh",
+      "relativePos": [3.5, 0.5, -1.0],
+      "material": "cubo_ouro",
+      "path": "utils/input/cubo.obj",
+      "transform": [
+        { "type": "scaling", "factors": [1.2, 1.2, 1.2] },
+        { "type": "rotation", "angle": [0.5, 0.5, 0.0] }
+      ]
     }
   ]
 }

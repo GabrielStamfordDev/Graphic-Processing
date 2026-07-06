@@ -1,0 +1,143 @@
+{
+  "camera": {
+    "lookfrom": [10.0, 7.0, 15.0],
+    "lookat": [0.0, 2.0, 0.0],
+    "upVector": [0.0, 1.0, 0.0],
+    "image_width": 1280,
+    "image_height": 720,
+    "screen_distance": 0.8
+  },
+  "globalLight": [0.15, 0.15, 0.18],
+  "lights": [
+    {
+      "position": [12.0, 12.0, 8.0],
+      "color": [1.2, 1.0, 0.9],
+      "name": "luz_principal"
+    },
+    {
+      "position": [-8.0, 6.0, -10.0],
+      "color": [0.4, 0.4, 0.6],
+      "name": "luz_secundaria"
+    },
+    {
+      "position": [0.0, 15.0, 0.0],
+      "color": [0.3, 0.3, 0.3],
+      "name": "luz_topo"
+    }
+  ],
+  "materials": {
+    "marble_chao": {
+      "color": [0.8, 0.8, 0.85],
+      "ks": [0.7, 0.7, 0.7],
+      "ka": [0.15, 0.15, 0.2],
+      "kr": [0.1, 0.1, 0.1],
+      "kt": [0.0, 0.0, 0.0],
+      "ns": 80.0,
+      "ni": 1.0,
+      "d": 1.0
+    },
+    "metal_cromado": {
+      "color": [0.3, 0.3, 0.35],
+      "ks": [0.95, 0.95, 1.0],
+      "ka": [0.0, 0.0, 0.0],
+      "kr": [0.85, 0.85, 0.9],
+      "kt": [0.0, 0.0, 0.0],
+      "ns": 500.0,
+      "ni": 1.0,
+      "d": 1.0
+    },
+    "vidro_azul": {
+      "color": [0.8, 0.9, 1.0],
+      "ks": [0.6, 0.6, 0.6],
+      "ka": [0.05, 0.05, 0.1],
+      "kr": [0.15, 0.15, 0.2],
+      "kt": [0.75, 0.75, 0.8],
+      "ns": 250.0,
+      "ni": 1.6,
+      "d": 0.2
+    },
+    "plastico_vermelho": {
+      "color": [0.9, 0.1, 0.1],
+      "ks": [0.4, 0.2, 0.2],
+      "ka": [0.15, 0.02, 0.02],
+      "kr": [0.0, 0.0, 0.0],
+      "kt": [0.0, 0.0, 0.0],
+      "ns": 40.0,
+      "ni": 1.0,
+      "d": 1.0
+    },
+    "ouro_polido": {
+      "color": [1.0, 0.84, 0.0],
+      "ks": [1.0, 0.95, 0.7],
+      "ka": [0.24, 0.2, 0.04],
+      "kr": [0.6, 0.5, 0.2],
+      "kt": [0.0, 0.0, 0.0],
+      "ns": 200.0,
+      "ni": 1.0,
+      "d": 1.0
+    },
+    "madeira_escura": {
+      "color": [0.4, 0.25, 0.1],
+      "ks": [0.3, 0.2, 0.1],
+      "ka": [0.08, 0.05, 0.02],
+      "kr": [0.05, 0.03, 0.01],
+      "kt": [0.0, 0.0, 0.0],
+      "ns": 30.0,
+      "ni": 1.0,
+      "d": 1.0
+    }
+  },
+  "objects": [
+    {
+      "type": "plane",
+      "relativePos": [0.0, 0.0, 0.0],
+      "normal": [0.0, 1.0, 0.0],
+      "material": "marble_chao"
+    },
+    {
+      "type": "sphere",
+      "center": [-4.0, 3.0, 2.0],
+      "radius": 2.5,
+      "material": "metal_cromado"
+    },
+    {
+      "type": "sphere",
+      "center": [4.0, 4.0, 0.0],
+      "radius": 3.0,
+      "material": "vidro_azul"
+    },
+    {
+      "type": "sphere",
+      "center": [0.0, 2.0, -5.0],
+      "radius": 1.8,
+      "material": "plastico_vermelho"
+    },
+    {
+      "type": "cylinder",
+      "relativePos": [-6.0, 0.0, -4.0],
+      "radius": 1.2,
+      "height": 4.0,
+      "eixo": [0.0, 1.0, 0.0],
+      "material": "ouro_polido"
+    },
+    {
+      "type": "cone",
+      "relativePos": [6.0, 0.0, 4.0],
+      "radius": 1.5,
+      "height": 5.0,
+      "eixo": [0.0, 1.0, 0.0],
+      "material": "madeira_escura"
+    },
+    {
+      "type": "mesh",
+      "relativePos": [0.0, 0.0, 0.0],
+      "material": "metal_cromado",
+      "path": "utils/input/monkey.obj",
+      "transform": [
+        { "type": "scaling", "factors": [2.0, 2.0, 2.0] },
+        { "type": "translation", "factors": [0.0, 4.5, 0.0] },
+        { "type": "rotation", "angle": [0.0, 0.785, 0.0] }
+      ]
+    }
+  ]
+}
